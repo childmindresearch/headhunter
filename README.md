@@ -110,3 +110,65 @@ parsed_batch.to_tree("tree_outputs/")
 # Export parsed data to a CSV file
 df_parsed.to_csv("parsed_data.csv")
 ```
+
+## How Hierarchy is Built
+
+Headhunter recognizes different heading styles in Markdown and builds a hierarchical structure by assigning levels to each heading. The following rules govern this process:
+
+### Basic Principles
+
+- **Headings create structure**: Each heading creates a new section in the document's outline
+- **Content follows headings**: Regular text is always nested under its nearest heading above
+- **First heading starts at level 1**: The first heading in a document becomes the top level
+
+### Rules for Different Heading Types
+
+#### Hash Headings (`#`, `##`, `###`)
+
+These work as expected in standard Markdown:
+
+- More `#` symbols = deeper in the hierarchy
+- `# Title` → level 1
+- `## Subtitle` → level 2
+- `### Sub-subtitle` → level 3
+
+The level increases or decreases based on how many more or fewer `#` symbols are present compared to the previous hash heading.
+
+#### Bold and Italic Headings (`**text**`, `*text*`, `***text***`)
+
+These follow a specific hierarchy from highest to lowest:
+
+1. `**Bold text**` (2 asterisks) = highest level
+2. `***Bold and italic***` (3 asterisks) = middle level
+3. `*Italic text*` (1 asterisk) = lowest level
+
+When switching between these styles, the level adjusts by just one step up or down:
+
+- Going from bold (`**`) to italic (`*`) moves one level deeper
+- Going from italic (`*`) to bold (`**`) moves one level shallower
+- Using the same style consecutively keeps the same level
+
+#### ALL CAPS HEADINGS
+
+When a heading with hash (`#`) or asterisk (`**`) markers is written in ALL CAPITAL LETTERS, special rules apply:
+
+- The first ALL CAPS heading sets its level based on what came before it
+- Every subsequent ALL CAPS heading uses that same level (they are treated as peers)
+
+Examples:
+
+- `# ALL CAPS HEADING` - Valid heading (hash marker with ALL CAPS text)
+- `**ALL CAPS HEADING**` - Valid heading (asterisk marker with ALL CAPS text)
+- `ALL CAPS HEADING` - Not a heading (no marker, treated as content)
+
+#### Inline Headings (with colons)
+
+When a heading ends with a colon (like `**Name:** Jane Doe`), it works differently:
+
+- The heading itself goes one level deeper than the previous heading
+- The content immediately after it is always treated as the deepest level
+- After that content, we return to the normal hierarchy
+
+### Mixed Heading Styles
+
+Different heading styles can be mixed in the same document. When switching from one style to another, the new heading typically goes one level deeper than the previous one. However, the specific rules for each style (described above) still apply.

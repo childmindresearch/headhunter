@@ -508,7 +508,6 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "pandas" },
-    { name = "pyarrow" },
 ]
 
 [package.dev-dependencies]
@@ -526,13 +525,11 @@ docs = [
 notebooks = [
     { name = "ipykernel" },
     { name = "jupyter" },
+    { name = "pyarrow" },
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "pandas", specifier = ">=2.3.3" },
-    { name = "pyarrow", specifier = ">=22.0.0" },
-]
+requires-dist = [{ name = "pandas", specifier = ">=2.3.3" }]
 
 [package.metadata.requires-dev]
 dev = [
@@ -547,6 +544,7 @@ docs = [{ name = "pdoc", specifier = ">=15.0.0" }]
 notebooks = [
     { name = "ipykernel", specifier = ">=6.29.5" },
     { name = "jupyter", specifier = ">=1.1.1" },
+    { name = "pyarrow", specifier = ">=22.0.0" },
 ]
 
 [[package]]

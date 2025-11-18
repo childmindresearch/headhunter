@@ -137,9 +137,9 @@ class ParsedText:
         Returns:
             A nested dictionary representation of the document structure.
         """
-        from headhunter import writer
+        from headhunter import output
 
-        return writer.to_dict(self.hierarchy, self.metadata)
+        return output.to_dict(self.hierarchy, self.metadata)
 
     def to_json(self, filepath: str, indent: int = 2) -> str:
         """Exports the document to a JSON file.
@@ -151,9 +151,9 @@ class ParsedText:
         Returns:
             Path to the created file.
         """
-        from headhunter import writer
+        from headhunter import output
 
-        return writer.to_json_file(self.hierarchy, filepath, self.metadata, indent)
+        return output.to_json_file(self.hierarchy, filepath, self.metadata, indent)
 
     def to_tree(self, show_line_numbers: bool = True, show_type: bool = True) -> str:
         """Generates an ASCII tree visualization of the document structure.
@@ -165,25 +165,23 @@ class ParsedText:
         Returns:
             ASCII tree representation as a string.
         """
-        from headhunter import writer
+        from headhunter import output
 
-        # Build metadata heading from document metadata
-        metadata_heading = dict(self.metadata) if self.metadata else None
-        return writer.to_tree_string(
-            self.hierarchy, show_line_numbers, show_type, metadata_heading
+        return output.to_tree_string(
+            self.hierarchy, show_line_numbers, show_type, self.metadata
         )
 
-    def to_dataframe(self) -> list[dict[str, object]]:
-        """Converts the document to row dictionaries.
+    def to_dataframe(self) -> pd.DataFrame:
+        """Converts the document to a pandas DataFrame.
 
         Returns:
-            List of dictionaries representing content rows with
+            DataFrame where each row is a content token with
             hierarchical context.
         """
-        from headhunter import writer
+        from headhunter import output
 
         doc_id = str(self.metadata["id"])
-        return writer.to_dataframe_rows(self.hierarchy, doc_id, self.metadata)
+        return output.to_dataframe(self.hierarchy, doc_id, self.metadata)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -246,9 +244,9 @@ class ParsedBatch:
         Returns:
             List of created file paths.
         """
-        from headhunter import writer
+        from headhunter import output
 
-        return writer.batch_to_json_files(self.documents, output_dir, indent)
+        return output.batch_to_json_files(self.documents, output_dir, indent)
 
     def to_tree(
         self, output_dir: str, show_line_numbers: bool = True, show_type: bool = True
@@ -263,9 +261,9 @@ class ParsedBatch:
         Returns:
             List of created file paths.
         """
-        from headhunter import writer
+        from headhunter import output
 
-        return writer.batch_to_tree_files(
+        return output.batch_to_tree_files(
             self.documents, output_dir, show_line_numbers, show_type
         )
 
@@ -276,9 +274,9 @@ class ParsedBatch:
             DataFrame with all content rows from all documents,
             including any metadata columns specified during batch processing.
         """
-        from headhunter import writer
+        from headhunter import output
 
-        return writer.batch_to_dataframe(self.documents, self.metadata_columns)
+        return output.batch_to_dataframe(self.documents, self.metadata_columns)
 
 
 class ParsingError(Exception):

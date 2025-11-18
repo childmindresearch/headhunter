@@ -11,6 +11,24 @@ from headhunter import models
 logger = _config.get_logger(__name__)
 
 
+def _pop_stack_to_parent_level(
+    stack: list[tuple[int, dict[str, object]]],
+    current_level: int,
+) -> dict[str, object]:
+    """Pops stack until parent level is less than current level.
+
+    Args:
+        stack: Stack of (level, section_dict) tuples.
+        current_level: Current hierarchy level.
+
+    Returns:
+        The parent section dictionary.
+    """
+    while len(stack) > 1 and stack[-1][0] >= current_level:
+        stack.pop()
+    return stack[-1][1]
+
+
 def to_dict(
     hierarchy: list[models.HierarchyContext],
     metadata: dict[str, object] | None = None,
@@ -47,21 +65,13 @@ def to_dict(
                 "sections": [],
             }
 
-            # Pop until parent level < current level
-            while len(stack) > 1 and stack[-1][0] >= ctx.level:
-                stack.pop()
-
-            parent = stack[-1][1]
+            parent = _pop_stack_to_parent_level(stack, ctx.level)
             assert type(parent["sections"]) is list
             parent["sections"].append(section)
             stack.append((ctx.level, section))
 
         elif token.type == "content":
-            # Pop until parent level < current level
-            while len(stack) > 1 and stack[-1][0] >= ctx.level:
-                stack.pop()
-
-            parent = stack[-1][1]
+            parent = _pop_stack_to_parent_level(stack, ctx.level)
 
             content_item = {
                 "type": token.type,
@@ -188,7 +198,95 @@ def to_tree_string(
     return "\n".join(lines)
 
 
-def to_dataframe_rows(
+def _ensure_output_directory(output_dir: str | pathlib.Path) -> pathlib.Path:
+    """Creates output directory if it doesn't exist.
+
+    Args:
+        output_dir: Directory path to create.
+
+    Returns:
+        Path object for the directory.
+    """
+    output_path = pathlib.Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    return output_path
+
+
+def batch_to_json_files(
+    documents: list[models.ParsedText],
+    output_dir: str | pathlib.Path,
+    indent: int = 2,
+) -> list[str]:
+    """Exports each document to individual JSON file.
+
+    Args:
+        documents: List of ParsedText objects.
+        output_dir: Directory where JSON files will be saved.
+        indent: JSON indentation level. Defaults to 2.
+
+    Returns:
+        List of created file paths.
+    """
+    output_path = _ensure_output_directory(output_dir)
+
+    created_files: list[str] = []
+
+    for doc in documents:
+        doc_id = str(doc.metadata["id"])
+        filepath = output_path / f"{doc_id}.json"
+        created_file = to_json_file(
+            doc.hierarchy,
+            filepath,
+            metadata=doc.metadata,
+            indent=indent,
+        )
+        created_files.append(created_file)
+
+    return created_files
+
+
+def batch_to_tree_files(
+    documents: list[models.ParsedText],
+    output_dir: str | pathlib.Path,
+    show_line_numbers: bool = True,
+    show_type: bool = True,
+) -> list[str]:
+    """Exports each document to individual tree text file.
+
+    Args:
+        documents: List of ParsedText objects.
+        output_dir: Directory where tree files will be saved.
+        show_line_numbers: Whether to show line numbers. Defaults to True.
+        show_type: Whether to show heading type. Defaults to True.
+
+    Returns:
+        List of created file paths.
+    """
+    output_path = _ensure_output_directory(output_dir)
+
+    logger.debug(f"Exporting {len(documents)} documents to tree files in {output_dir}")
+    created_files: list[str] = []
+
+    for doc in documents:
+        doc_id = str(doc.metadata["id"])
+        filepath = output_path / f"{doc_id}.txt"
+
+        tree_str = to_tree_string(
+            doc.hierarchy,
+            show_line_numbers=show_line_numbers,
+            show_type=show_type,
+            metadata_heading=doc.metadata,
+        )
+
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(tree_str)
+
+        created_files.append(str(filepath))
+
+    return created_files
+
+
+def _to_dataframe_rows(
     hierarchy: list[models.HierarchyContext],
     doc_id: str,
     metadata: dict[str, object] | None = None,
@@ -228,80 +326,88 @@ def to_dataframe_rows(
     return rows
 
 
-def batch_to_json_files(
-    documents: list[models.ParsedText],
-    output_dir: str | pathlib.Path,
-    indent: int = 2,
-) -> list[str]:
-    """Exports each document to individual JSON file.
+def _create_empty_dataframe(
+    metadata_columns: list[str] | dict[str, object] | None = None,
+) -> pd.DataFrame:
+    """Creates empty DataFrame with standard column structure.
 
     Args:
-        documents: List of ParsedText objects.
-        output_dir: Directory where JSON files will be saved.
-        indent: JSON indentation level. Defaults to 2.
+        metadata_columns: Either a list of metadata column names or a dict
+            of metadata to extract keys from.
 
     Returns:
-        List of created file paths.
+        Empty DataFrame with proper column structure.
     """
-    output_path = pathlib.Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
-
-    created_files: list[str] = []
-
-    for doc in documents:
-        doc_id = str(doc.metadata["id"])
-        filepath = output_path / f"{doc_id}.json"
-        created_file = to_json_file(
-            doc.hierarchy,
-            filepath,
-            metadata=doc.metadata,
-            indent=indent,
-        )
-        created_files.append(created_file)
-
-    return created_files
+    base_columns = ["id"]
+    if metadata_columns:
+        if isinstance(metadata_columns, dict):
+            base_columns.extend(metadata_columns.keys())
+        else:
+            base_columns.extend(metadata_columns)
+    base_columns.extend(
+        ["start_line", "level", "length", "parents", "parent_types", "content"]
+    )
+    logger.warning(
+        "Created empty DataFrame: no content tokens found for DataFrame output."
+    )
+    return pd.DataFrame(columns=base_columns)
 
 
-def batch_to_tree_files(
-    documents: list[models.ParsedText],
-    output_dir: str | pathlib.Path,
-    show_line_numbers: bool = True,
-    show_type: bool = True,
-) -> list[str]:
-    """Exports each document to individual tree text file.
+def _order_dataframe_columns(
+    df: pd.DataFrame,
+    metadata_columns: list[str] | dict[str, object] | None = None,
+) -> pd.DataFrame:
+    """Orders DataFrame columns consistently.
 
     Args:
-        documents: List of ParsedText objects.
-        output_dir: Directory where tree files will be saved.
-        show_line_numbers: Whether to show line numbers. Defaults to True.
-        show_type: Whether to show heading type. Defaults to True.
+        df: DataFrame to reorder.
+        metadata_columns: Either a list of metadata column names or a dict
+            of metadata to extract keys from.
 
     Returns:
-        List of created file paths.
+        DataFrame with ordered columns.
     """
-    output_path = pathlib.Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
-
-    logger.debug(f"Exporting {len(documents)} documents to tree files in {output_dir}")
-    created_files: list[str] = []
-
-    for doc in documents:
-        doc_id = str(doc.metadata["id"])
-        filepath = output_path / f"{doc_id}.txt"
-
-        tree_str = to_tree_string(
-            doc.hierarchy,
-            show_line_numbers=show_line_numbers,
-            show_type=show_type,
-            metadata_heading=doc.metadata,
+    column_order = ["id"]
+    if metadata_columns:
+        metadata_keys = (
+            metadata_columns.keys()
+            if isinstance(metadata_columns, dict)
+            else metadata_columns
         )
+        for col in metadata_keys:
+            if col in df.columns:
+                column_order.append(col)
+    column_order.extend(
+        ["start_line", "level", "length", "parents", "parent_types", "content"]
+    )
 
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(tree_str)
+    column_order = [c for c in column_order if c in df.columns]
+    return df[column_order]
 
-        created_files.append(str(filepath))
 
-    return created_files
+def to_dataframe(
+    hierarchy: list[models.HierarchyContext],
+    doc_id: str,
+    metadata: dict[str, object] | None = None,
+) -> pd.DataFrame:
+    """Converts a single document to a DataFrame.
+
+    Args:
+        hierarchy: List of HierarchyContext objects.
+        doc_id: Document identifier to include in each row.
+        metadata: Optional metadata to include in each row.
+
+    Returns:
+        DataFrame where each row is a content token with hierarchical
+        context.
+    """
+    rows = _to_dataframe_rows(hierarchy, doc_id, metadata)
+
+    if not rows:
+        return _create_empty_dataframe(metadata)
+
+    result_df = pd.DataFrame(rows)
+    return _order_dataframe_columns(result_df, metadata)
 
 
 def batch_to_dataframe(
@@ -319,6 +425,9 @@ def batch_to_dataframe(
         DataFrame where each row is a content token with hierarchical
         context. Multiple rows may have same id if from same document.
     """
+    if not documents:
+        return _create_empty_dataframe(metadata_columns)
+
     all_rows: list[dict[str, object]] = []
 
     for doc in documents:
@@ -330,29 +439,11 @@ def batch_to_dataframe(
                 if col in doc.metadata:
                     metadata_dict[col] = doc.metadata[col]
 
-        rows = to_dataframe_rows(doc.hierarchy, doc_id, metadata_dict)
+        rows = _to_dataframe_rows(doc.hierarchy, doc_id, metadata_dict)
         all_rows.extend(rows)
 
     if not all_rows:
-        base_columns = ["id"]
-        if metadata_columns:
-            base_columns.extend(metadata_columns)
-        base_columns.extend(
-            ["start_line", "level", "length", "parents", "parent_types", "content"]
-        )
-        return pd.DataFrame(columns=base_columns)
+        return _create_empty_dataframe(metadata_columns)
 
     result_df = pd.DataFrame(all_rows)
-
-    column_order = ["id"]
-    if metadata_columns:
-        for col in metadata_columns:
-            if col in result_df.columns:
-                column_order.append(col)
-    column_order.extend(
-        ["start_line", "level", "length", "parents", "parent_types", "content"]
-    )
-
-    column_order = [c for c in column_order if c in result_df.columns]
-
-    return result_df[column_order]
+    return _order_dataframe_columns(result_df, metadata_columns)

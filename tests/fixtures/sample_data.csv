@@ -1,0 +1,46 @@
+doc_id,content,category,priority
+doc1,"# Document 1
+
+This is the first document with some content.
+
+## Section 1.1
+
+More details here.",A,1
+doc2,"# Document 2
+
+## Overview
+
+Second document overview.
+
+### Details
+
+Nested content.",B,2
+doc3,"**Document number:** 3
+
+**Document type**: Markdown
+
+Simple document with minimal structure.",A,3
+doc4,"# Document 4
+
+## Introduction
+
+Fourth document.
+
+## Conclusion
+
+Final thoughts.",C,1
+doc5,"**Document 5**
+
+A document with asterisk formatting.
+
+***Subsection***
+
+Fifth document with different heading hierarchy.
+
+*Deeper Subsection*
+
+Content under deeper subsection.
+
+***Another Subsection***
+
+This should be at the same level as previous subsection.",B,2
