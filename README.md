@@ -1,59 +1,112 @@
-[![DOI](https://zenodo.org/badge/657341621.svg)](https://zenodo.org/doi/10.5281/zenodo.10383685)
+# headhunter
 
-# CMI-DAIR Template Python Repository
-
-Welcome to the CMI-DAIR Template Python Repository! This template is designed to streamline your project setup and ensure a consistent structure. To get started, follow these steps:
-
-- [ ] Run `setup_template.py` to initialize the repository.
-- [ ] Replace the content of this `README.md` with details specific to your project.
-- [ ] Install the `pre-commit` hooks to ensure code quality on each commit.
-- [ ] Revise SECURITY.md to reflect supported versions or remove it if not applicable.
-- [ ] Remove the placeholder src and test files, these are there merely to show how the CI works.
-- [ ] If it hasn't already been done for your organization/acccount, grant third-party app permissions for CodeCov.
-- [ ] To set up an API documentation website, go to the `Settings` tab of your repository, scroll down to the `GitHub Pages` section, and select `GitHub Actions` as the source. This will generate a link to your API docs.
-- [ ] Update stability badge in `README.md` to reflect the current state of the project. A list of stability badges to copy can be found [here](https://github.com/orangemug/stability-badges). The [node documentation](https://nodejs.org/docs/latest-v20.x/api/documentation.html#documentation_stability_index) can be used as a reference for the stability levels.
-
-# Project name
-
-[![Build](https://github.com/childmindresearch/template-python-repository/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/childmindresearch/template-python-repository/actions/workflows/test.yaml?query=branch%3Amain)
-[![codecov](https://codecov.io/gh/childmindresearch/template-python-repository/branch/main/graph/badge.svg?token=22HWWFWPW5)](https://codecov.io/gh/childmindresearch/template-python-repository)
+[![Build](https://github.com/childmindresearch/headhunter/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/childmindresearch/headhunter/actions/workflows/test.yaml?query=branch%3Amain)
+[![codecov](https://codecov.io/gh/childmindresearch/headhunter/branch/main/graph/badge.svg?token=22HWWFWPW5)](https://codecov.io/gh/childmindresearch/headhunter)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-![stability-stable](https://img.shields.io/badge/stability-stable-green.svg)
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/childmindresearch/template-python-repository/blob/main/LICENSE)
-[![pages](https://img.shields.io/badge/api-docs-blue)](https://childmindresearch.github.io/template-python-repository)
+![stability-experimental](https://img.shields.io/badge/stability-experimental-orange.svg)
+[![LGPL--2.1 License](https://img.shields.io/badge/license-LGPL--2.1-blue.svg)](https://github.com/childmindresearch/headhunter/blob/main/LICENSE)
+[![pages](https://img.shields.io/badge/api-docs-blue)](https://childmindresearch.github.io/headhunter)
 
-What problem does this tool solve?
+A parser for extracting headings and hierarchical structure from Markdown files.
 
 ## Features
 
-- A few
-- Cool
-- Things
+- Parse multiple heading formats (hash `#`, asterisk `**`, inline with colon, all-caps)
+- Build hierarchical structure from headings
+- Process single documents or batches from DataFrames
+- Export results to DataFrame, JSON, or tree visualizations
+- Configurable parsing rules and word limits
 
 ## Installation
 
-Install this package via :
+Get the newest development version via:
 
 ```sh
-pip install APP_NAME
-```
-
-Or get the newest development version via:
-
-```sh
-pip install git+https://github.com/childmindresearch/template-python-repository
+pip install git+https://github.com/childmindresearch/headhunter
 ```
 
 ## Quick start
 
-Short tutorial, maybe with a
+**Process a single markdown document:**
 
-```Python
-import APP_NAME
+```python
+import headhunter
 
-APP_NAME.short_example()
+# Process markdown text
+# This returns a ParsedText object that contains parsed tokens,
+# hierarchy, and methods to export/view the results.
+parsed_result = headhunter.process_text(
+    "# Title\n"
+    "## Subtitle\n"
+    "Content here"
+)
+
+# Export results
+parsed_result.to_json("output.json")
+
+# Print tree visualization
+print(parsed_result.to_tree())
+
+# View results in a pandas DataFrame
+df_parsed = parsed_result.to_dataframe()
+print(df_parsed)
 ```
 
-## Links or References
+**Process a batch of documents:**
 
-- [https://www.wikipedia.de](https://www.wikipedia.de)
+```python
+import pandas as pd
+import headhunter
+
+# DataFrame with markdown content
+df = pd.DataFrame(
+    {
+        "doc_id": ["doc1", "doc2"],
+        "content": [
+            (
+                "# Document 1\n\n"
+                "This is the first document with some content.\n\n"
+                "## Section 1.1\n\n"
+                "More details here."
+            ),
+            (
+                "**Document 2**\n\n"
+                "**Document type**: Markdown\n\n"
+                "A document with asterisk formatting.\n\n"
+                "***Subsection***\n\n"
+                "Second document with different heading hierarchy.\n\n"
+                "*Deeper Subsection*\n\n"
+                "Content under deeper subsection."
+                "***Another Subsection***\n\n"
+                "This should be at the same level as previous subsection."
+            ),
+        ],
+        "category": ["A", "B"],
+        "priority": [1, 2],
+    }
+)
+
+# Process batch
+# This returns a ParsedBatch object that contains a list of ParsedText objects
+# for each document in the batch, along with methods to export/view the results.
+parsed_batch = headhunter.process_batch_df(
+    df=df,
+    content_column="content",
+    id_column="doc_id",
+    metadata_columns=["category", "priority"],
+    config={"heading_max_words": 7},
+)
+
+# View results in a pandas DataFrame
+df_parsed = parsed_batch.to_dataframe()
+print(df_parsed)
+
+# Export each file's hierarchy to JSON
+parsed_batch.to_json("json_outputs/")
+
+# Export each file's tree visualization to text files
+parsed_batch.to_tree("tree_outputs/")
+
+# Export parsed data to a CSV file
+df_parsed.to_csv("parsed_data.csv")
+```

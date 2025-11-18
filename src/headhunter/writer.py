@@ -1,0 +1,358 @@
+"""Output formatting functions for parsed markdown structures."""
+
+import json
+import pathlib
+
+import pandas as pd
+
+from headhunter import config as _config
+from headhunter import models
+
+logger = _config.get_logger(__name__)
+
+
+def to_dict(
+    hierarchy: list[models.HierarchyContext],
+    metadata: dict[str, object] | None = None,
+) -> dict[str, object]:
+    """Converts hierarchy contexts into a nested dictionary structure.
+
+    Args:
+        hierarchy: List of HierarchyContext objects representing the
+            document structure.
+        metadata: Optional metadata to include at root level.
+
+    Returns:
+        A hierarchical dictionary where each heading contains its content
+        and child sections.
+    """
+    if not hierarchy:
+        return {**metadata} if metadata else {}
+
+    root: dict[str, object] = {**(metadata or {}), "sections": []}
+
+    # Stack: list[(level, section_dict)]
+    stack: list[tuple[int, dict[str, object]]] = [(0, root)]
+
+    for ctx in hierarchy:
+        token = ctx.token
+
+        if token.type == "heading":
+            section = {
+                "type": token.type,
+                "text": token.content,
+                "level": ctx.level,
+                "line_number": token.line_number,
+                "metadata": token.metadata,
+                "sections": [],
+            }
+
+            # Pop until parent level < current level
+            while len(stack) > 1 and stack[-1][0] >= ctx.level:
+                stack.pop()
+
+            parent = stack[-1][1]
+            assert type(parent["sections"]) is list
+            parent["sections"].append(section)
+            stack.append((ctx.level, section))
+
+        elif token.type == "content":
+            # Pop until parent level < current level
+            while len(stack) > 1 and stack[-1][0] >= ctx.level:
+                stack.pop()
+
+            parent = stack[-1][1]
+
+            content_item = {
+                "type": token.type,
+                "text": token.content,
+                "level": ctx.level,
+                "line_number": token.line_number,
+            }
+
+            assert type(parent["sections"]) is list
+            parent["sections"].append(content_item)
+
+    return root
+
+
+def to_json_file(
+    hierarchy: list[models.HierarchyContext],
+    filepath: str | pathlib.Path,
+    metadata: dict[str, object] | None = None,
+    indent: int = 2,
+) -> str:
+    """Exports hierarchy to a JSON file.
+
+    Args:
+        hierarchy: List of HierarchyContext objects.
+        filepath: Path to output JSON file.
+        metadata: Optional metadata to include at root level.
+        indent: JSON indentation level. Defaults to 2.
+
+    Returns:
+        Path to the created file as a string.
+    """
+    hierarchical_data = to_dict(hierarchy, metadata)
+
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(hierarchical_data, f, indent=indent, ensure_ascii=False)
+
+    logger.debug(f"Exported JSON to {filepath}")
+    return str(filepath)
+
+
+def to_tree_string(
+    hierarchy: list[models.HierarchyContext],
+    show_line_numbers: bool = True,
+    show_type: bool = True,
+    metadata_heading: dict[str, object] | None = None,
+) -> str:
+    """Converts hierarchy to ASCII tree string representation.
+
+    Args:
+        hierarchy: List of HierarchyContext objects.
+        show_line_numbers: Whether to show line numbers. Defaults to True.
+        show_type: Whether to show heading type indicators. Defaults to True.
+        metadata_heading: Optional metadata to display at top of tree.
+
+    Returns:
+        Tree structure as a string.
+    """
+    # Filter to only heading contexts
+    heading_contexts = [ctx for ctx in hierarchy if ctx.token.type == "heading"]
+
+    lines: list[str] = []
+
+    # Add metadata heading if provided
+    if metadata_heading:
+        lines.append("Metadata")
+        lines.append("-" * 80)
+        for key, value in metadata_heading.items():
+            lines.append(f"{key}: {value}")
+        lines.append("")
+
+    if not heading_contexts:
+        lines.append("No headings found")
+        return "\n".join(lines)
+
+    lines.append("Document Structure")
+    lines.append("=" * 80)
+
+    # Track levels and whether they have more siblings
+    level_has_more: dict[int, bool] = {}
+
+    for i, ctx in enumerate(heading_contexts):
+        heading = ctx.token
+
+        # Determine if this heading has siblings after it at same level
+        has_more_siblings = False
+        for j in range(i + 1, len(heading_contexts)):
+            if heading_contexts[j].level < ctx.level:
+                break
+            if heading_contexts[j].level == ctx.level:
+                has_more_siblings = True
+                break
+
+        level_has_more[ctx.level] = has_more_siblings
+
+        # Build tree prefix
+        prefix = ""
+        for level in range(1, ctx.level):
+            if level in level_has_more and level_has_more[level]:
+                prefix += "│   "
+            else:
+                prefix += "    "
+
+        # Add branch character
+        if ctx.level > 1:
+            if has_more_siblings:
+                prefix += "├── "
+            else:
+                prefix += "└── "
+
+        # Build label
+        label = heading.content
+
+        # Add type indicator
+        if show_type:
+            type_sig = heading.metadata["heading_type"]
+            label += f" [{type_sig}]"
+
+        # Add line number
+        if show_line_numbers:
+            label += f" (line {heading.line_number})"
+
+        lines.append(f"{prefix}{label}")
+
+    return "\n".join(lines)
+
+
+def to_dataframe_rows(
+    hierarchy: list[models.HierarchyContext],
+    doc_id: str,
+    metadata: dict[str, object] | None = None,
+) -> list[dict[str, object]]:
+    """Extracts content tokens as DataFrame-compatible row dictionaries.
+
+    Args:
+        hierarchy: List of HierarchyContext objects.
+        doc_id: Document identifier to include in each row.
+        metadata: Optional metadata to include in each row.
+
+    Returns:
+        List of dictionaries, one per content token, containing:
+        id, metadata fields, start_line, level, length, parents,
+        parent_types, content.
+    """
+    rows: list[dict[str, object]] = []
+
+    for ctx in hierarchy:
+        if ctx.token.type == "content":
+            row: dict[str, object] = {
+                "id": doc_id,
+                "start_line": ctx.token.line_number,
+                "level": ctx.level,
+                "length": len(ctx.token.content),
+                "parents": ctx.parents,
+                "parent_types": ctx.parent_types,
+                "content": ctx.token.content,
+            }
+
+            if metadata:
+                for key, value in metadata.items():
+                    row[key] = value
+
+            rows.append(row)
+
+    return rows
+
+
+def batch_to_json_files(
+    documents: list[models.ParsedText],
+    output_dir: str | pathlib.Path,
+    indent: int = 2,
+) -> list[str]:
+    """Exports each document to individual JSON file.
+
+    Args:
+        documents: List of ParsedText objects.
+        output_dir: Directory where JSON files will be saved.
+        indent: JSON indentation level. Defaults to 2.
+
+    Returns:
+        List of created file paths.
+    """
+    output_path = pathlib.Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    created_files: list[str] = []
+
+    for doc in documents:
+        doc_id = str(doc.metadata["id"])
+        filepath = output_path / f"{doc_id}.json"
+        created_file = to_json_file(
+            doc.hierarchy,
+            filepath,
+            metadata=doc.metadata,
+            indent=indent,
+        )
+        created_files.append(created_file)
+
+    return created_files
+
+
+def batch_to_tree_files(
+    documents: list[models.ParsedText],
+    output_dir: str | pathlib.Path,
+    show_line_numbers: bool = True,
+    show_type: bool = True,
+) -> list[str]:
+    """Exports each document to individual tree text file.
+
+    Args:
+        documents: List of ParsedText objects.
+        output_dir: Directory where tree files will be saved.
+        show_line_numbers: Whether to show line numbers. Defaults to True.
+        show_type: Whether to show heading type. Defaults to True.
+
+    Returns:
+        List of created file paths.
+    """
+    output_path = pathlib.Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    logger.debug(f"Exporting {len(documents)} documents to tree files in {output_dir}")
+    created_files: list[str] = []
+
+    for doc in documents:
+        doc_id = str(doc.metadata["id"])
+        filepath = output_path / f"{doc_id}.txt"
+
+        tree_str = to_tree_string(
+            doc.hierarchy,
+            show_line_numbers=show_line_numbers,
+            show_type=show_type,
+            metadata_heading=doc.metadata,
+        )
+
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(tree_str)
+
+        created_files.append(str(filepath))
+
+    return created_files
+
+
+def batch_to_dataframe(
+    documents: list[models.ParsedText],
+    metadata_columns: list[str] | None = None,
+) -> pd.DataFrame:
+    """Converts batch of documents to single DataFrame.
+
+    Args:
+        documents: List of ParsedText objects.
+        metadata_columns: Optional list of metadata keys to include as
+            columns in output DataFrame.
+
+    Returns:
+        DataFrame where each row is a content token with hierarchical
+        context. Multiple rows may have same id if from same document.
+    """
+    all_rows: list[dict[str, object]] = []
+
+    for doc in documents:
+        doc_id = str(doc.metadata["id"])
+
+        metadata_dict = {}
+        if metadata_columns:
+            for col in metadata_columns:
+                if col in doc.metadata:
+                    metadata_dict[col] = doc.metadata[col]
+
+        rows = to_dataframe_rows(doc.hierarchy, doc_id, metadata_dict)
+        all_rows.extend(rows)
+
+    if not all_rows:
+        base_columns = ["id"]
+        if metadata_columns:
+            base_columns.extend(metadata_columns)
+        base_columns.extend(
+            ["start_line", "level", "length", "parents", "parent_types", "content"]
+        )
+        return pd.DataFrame(columns=base_columns)
+
+    result_df = pd.DataFrame(all_rows)
+
+    column_order = ["id"]
+    if metadata_columns:
+        for col in metadata_columns:
+            if col in result_df.columns:
+                column_order.append(col)
+    column_order.extend(
+        ["start_line", "level", "length", "parents", "parent_types", "content"]
+    )
+
+    column_order = [c for c in column_order if c in result_df.columns]
+
+    return result_df[column_order]
