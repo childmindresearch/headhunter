@@ -20,8 +20,9 @@ class HierarchyBuilder:
 
     def _compute_all_caps_level(
         self,
+        metadata: models.HeadingMetadata,
         state: models.HierarchyState,
-        heading_stack: list[tuple[int, str, dict[str, str | int]]],
+        heading_stack: list[tuple[int, str, models.HeadingMetadata]],
     ) -> int:
         """Computes level for all-caps headings.
 
@@ -29,6 +30,7 @@ class HierarchyBuilder:
         all-caps headings use that same fixed level.
 
         Args:
+            metadata: The metadata of the current heading.
             state: The current hierarchy state.
             heading_stack: The current heading stack.
 
@@ -41,16 +43,17 @@ class HierarchyBuilder:
         else:
             level = state.all_caps_level
 
-        # Reset asterisk state when we encounter an all-caps heading
-        # This ensures that the next asterisk heading after an all-caps heading
-        # starts fresh without reference to previous asterisk levels
-        state.last_asterisk_level = None
-        state.last_asterisk_marker_count = None
+        # Reset asterisk state when we encounter an all-caps heading with asterisk
+        # markers. This ensures that the next asterisk heading after an all-caps
+        # asterisk heading starts fresh without reference to previous asterisk levels
+        if metadata.is_asterisk:
+            state.last_asterisk_level = None
+            state.last_asterisk_marker_count = None
 
         return level
 
     def _compute_inline_level(
-        self, heading_stack: list[tuple[int, str, dict[str, str | int]]]
+        self, heading_stack: list[tuple[int, str, models.HeadingMetadata]]
     ) -> int:
         """Computes level for inline headings.
 
@@ -68,7 +71,7 @@ class HierarchyBuilder:
         self,
         marker_count: int,
         state: models.HierarchyState,
-        heading_stack: list[tuple[int, str, dict[str, str | int]]],
+        heading_stack: list[tuple[int, str, models.HeadingMetadata]],
     ) -> int:
         """Computes level for hash headings.
 
@@ -94,7 +97,6 @@ class HierarchyBuilder:
         else:
             level = state.last_heading_level + 1
 
-        # Update state
         state.last_hash_level = level
         state.last_hash_marker_count = marker_count
         state.previous_heading_was_hash = True
@@ -105,14 +107,13 @@ class HierarchyBuilder:
         self,
         marker_count: int,
         state: models.HierarchyState,
-        heading_stack: list[tuple[int, str, dict[str, str | int]]],
+        heading_stack: list[tuple[int, str, models.HeadingMetadata]],
     ) -> int:
         """Computes level for asterisk headings.
 
         Uses custom ordering for binary comparison: bold (2) < bold+italic (3) <
-        italic (1). Level changes by +1 or -1 based on whether current heading
-        is deeper or shallower
-        in the hierarchy compared to the previous asterisk heading.
+        italic (1). Level changes by +1 or -1 based on whether current heading is
+        deeper or shallower in the hierarchy compared to the previous asterisk heading.
 
         The mapping establishes a hierarchy where:
         - 2 asterisks (bold) → order 1 (highest level in hierarchy)
@@ -154,7 +155,6 @@ class HierarchyBuilder:
         else:
             level = state.last_heading_level + 1
 
-        # Update state
         state.last_asterisk_level = level
         state.last_asterisk_marker_count = marker_count
         state.previous_heading_was_hash = False
@@ -165,11 +165,14 @@ class HierarchyBuilder:
         self,
         token: models.Token,
         state: models.HierarchyState,
-        heading_stack: list[tuple[int, str, dict[str, str | int]]],
+        heading_stack: list[tuple[int, str, models.HeadingMetadata]],
     ) -> int:
         """Computes the hierarchical level for a heading token.
 
-        Delegates to specific computation methods based on heading type.
+        Delegates to specific computation methods based on heading type. The
+        computation follows a priority order: all-caps (regardless of marker),
+        hash headings, then asterisk headings. Inline asterisk headings with
+        colon format (e.g., **Label:**) are treated separately.
 
         Args:
             token: The heading token to compute level for.
@@ -179,27 +182,27 @@ class HierarchyBuilder:
         Returns:
             The computed hierarchical level.
         """
-        marker = token.metadata["marker"]
-        marker_count = token.metadata["marker_count"]
-        case = token.metadata["case"]
-        position = token.metadata["position"]
+        metadata = token.metadata
+        if metadata is None:
+            raise ValueError(f"Heading token missing metadata: {token}")
 
-        if case == "all_caps" and position == "standalone":
-            return self._compute_all_caps_level(state, heading_stack)
-        elif position == "inline":
-            return self._compute_inline_level(heading_stack)
-        elif marker == "#":
-            return self._compute_hash_level(int(marker_count), state, heading_stack)
-        elif marker == "*":
-            return self._compute_asterisk_level(int(marker_count), state, heading_stack)
-        else:
-            return state.last_heading_level + 1 if state.last_heading_level > 0 else 1
+        if metadata.is_all_caps:
+            return self._compute_all_caps_level(metadata, state, heading_stack)
+        elif metadata.is_hash:
+            return self._compute_hash_level(metadata.marker_count, state, heading_stack)
+        else:  # metadata.is_asterisk
+            if metadata.is_inline:
+                return self._compute_inline_level(heading_stack)
+            else:
+                return self._compute_asterisk_level(
+                    metadata.marker_count, state, heading_stack
+                )
 
     def _create_hierarchy_context(
         self,
         token: models.Token,
         level: int,
-        heading_stack: list[tuple[int, str, dict[str, str | int]]],
+        heading_stack: list[tuple[int, str, models.HeadingMetadata]],
     ) -> models.HierarchyContext:
         """Creates a HierarchyContext for a token.
 
@@ -212,7 +215,7 @@ class HierarchyBuilder:
             A HierarchyContext object with parent information extracted from the stack.
         """
         parents = [h[1] for h in heading_stack]
-        parent_types = [str(h[2]["heading_type"]) for h in heading_stack]
+        parent_types = [h[2].signature for h in heading_stack]
 
         return models.HierarchyContext(
             token=token,
@@ -223,7 +226,7 @@ class HierarchyBuilder:
 
     def _update_heading_stack(
         self,
-        heading_stack: list[tuple[int, str, dict[str, str | int]]],
+        heading_stack: list[tuple[int, str, models.HeadingMetadata]],
         level: int,
         token: models.Token,
     ) -> None:
@@ -238,30 +241,38 @@ class HierarchyBuilder:
         """
         while heading_stack and heading_stack[-1][0] >= level:
             heading_stack.pop()
+        assert type(token.metadata) is models.HeadingMetadata  # for mypy
         heading_stack.append((level, token.content, token.metadata))
 
     def _should_pop_inline_heading(
         self, context_list: list[models.HierarchyContext]
     ) -> bool:
-        """Checks if the previous token was an inline heading that should be popped.
+        """Checks if previous token was an inline colon heading that should be popped.
+
+        Only inline colon headings (**Label:**) should be popped after their content.
+        Regular headings that happen to be extracted inline should remain on the stack.
 
         Args:
             context_list: The list of hierarchy contexts built so far.
 
         Returns:
-            True if the previous token was an inline heading, False otherwise.
+            True if the previous token was an inline colon heading, False otherwise.
         """
         if not context_list or len(context_list) < 2:
             return False
 
         prev_context = context_list[-2]
-        return (
-            prev_context.token.type == "heading"
-            and prev_context.token.metadata["position"] == "inline"
-        )
+        if prev_context.token.type != "heading":
+            return False
+
+        metadata = prev_context.token.metadata
+        return metadata is not None and metadata.is_inline
 
     def build(
-        self, tokens: list[models.Token]
+        self,
+        tokens: list[models.Token],
+        initial_state: models.HierarchyState | None = None,
+        start_index: int = 0,
     ) -> tuple[list[models.HierarchyContext], list[str]]:
         """Builds hierarchical context for all tokens.
 
@@ -275,16 +286,17 @@ class HierarchyBuilder:
         - First heading gets level 1
         - All-caps headings: First encounter sets the level contextually, all subsequent
           all-caps headings use that same fixed level
-        - Inline headings: Treated as one level above their content (content is always
-          leaf)
-        - For other headings:
-          - Hash headings: level = last_hash_level + (marker_count -
-            last_hash_marker_count)
-          - Asterisk headings: Use asterisk ordering (bold < bold+italic < italic)
+        - Inline headings: HierarchyState is not updated since it can only have a
+          content that is leaf; level = last_heading_level + 1
+        - Hash headings: level = last_hash_level + (marker_count -
+          last_hash_marker_count)
+        - Asterisk headings: Use asterisk ordering (bold < bold+italic < italic)
         - Content tokens: level = last_heading_level + 1 (or 1 if no headings)
 
         Args:
             tokens: List of tokens to build hierarchy for.
+            initial_state: Optional HierarchyState to start with (for partial rebuilds).
+            start_index: Index to start processing from (for partial rebuilds).
 
         Returns:
             A tuple of (hierarchy_contexts, warnings) where hierarchy_contexts is a list
@@ -299,23 +311,21 @@ class HierarchyBuilder:
             return [], warnings
 
         context_list: list[models.HierarchyContext] = []
-        heading_stack: list[tuple[int, str, dict[str, str | int]]] = []
-        state = models.HierarchyState()
+        heading_stack: list[tuple[int, str, models.HeadingMetadata]] = []
+        state = initial_state if initial_state is not None else models.HierarchyState()
 
-        for token in tokens:
+        for token in tokens[start_index:]:
             if token.type == "heading":
-                # Compute level for this heading
                 level = self._compute_heading_level(token, state, heading_stack)
 
-                # Create context
                 context = self._create_hierarchy_context(token, level, heading_stack)
                 context_list.append(context)
 
-                # Update heading stack
                 self._update_heading_stack(heading_stack, level, token)
 
-                # Update state (but NOT for inline headings - no hierarchy effect)
-                if token.metadata["position"] != "inline":
+                # Update state (but NOT for inline colon headings)
+                metadata = token.metadata
+                if metadata is not None and not metadata.is_inline:
                     state.last_heading_level = level
 
             elif token.type == "content":
@@ -323,7 +333,6 @@ class HierarchyBuilder:
                 # (The stack includes inline headings, while last_heading_level doesn't)
                 level = heading_stack[-1][0] + 1 if heading_stack else 1
 
-                # Create context
                 context = self._create_hierarchy_context(token, level, heading_stack)
                 context_list.append(context)
 

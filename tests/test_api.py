@@ -8,32 +8,25 @@ from headhunter.models import ParsedBatch, ParsedText
 
 def test_process_text(
     sample_mixed_markdown: str,
+    sample_mixed_json: dict,
 ) -> None:
     """Test processing of a mixed markdown text."""
     text = sample_mixed_markdown
     metadata = {"source": "unit_test", "id": 123}
-    expected_token_count = 18
-    expected_heading_count = 10
-    expected_content_count = expected_token_count - expected_heading_count
 
     parsed_text = process_text(
         text,
         metadata=metadata,
     )
-    num_headings = sum(1 for t in parsed_text.tokens if t.type == "heading")
-    num_content = sum(1 for t in parsed_text.tokens if t.type == "content")
+    actual_output = parsed_text.to_dict()
 
-    assert isinstance(parsed_text, ParsedText)
-    assert parsed_text.text == text
-    assert parsed_text.metadata == metadata
-    assert len(parsed_text.tokens) == expected_token_count
-    assert len(parsed_text.hierarchy) == expected_token_count
-    assert num_headings == expected_heading_count
-    assert num_content == expected_content_count
+    assert type(parsed_text) is ParsedText
+    assert actual_output == sample_mixed_json
 
 
 def test_process_batch_df(
     sample_dataframe: pd.DataFrame,
+    sample_dataframe_parsed: pd.DataFrame,
 ) -> None:
     """Test batch processing of DataFrame."""
     content_column = "content"
@@ -48,13 +41,35 @@ def test_process_batch_df(
         metadata_columns=metadata_columns,
     )
 
-    assert isinstance(parsed_batch, ParsedBatch)
-    assert len(parsed_batch.documents) == len(df)
+    actual_output = parsed_batch.to_dataframe()
 
-    assert parsed_batch.metadata_columns is not None
-    for col in metadata_columns:
-        assert col in parsed_batch.metadata_columns
+    assert type(parsed_batch) is ParsedBatch
+    assert actual_output.equals(sample_dataframe_parsed)
 
-    for parsed_text in parsed_batch.documents:
-        assert isinstance(parsed_text, ParsedText)
-        assert parsed_text.text in df["content"].values
+
+def test_process_text_with_matcher(
+    sample_match_markdown: str,
+    sample_match_json: dict,
+) -> None:
+    """Test processing text with heading matcher using match.md fixture."""
+    text = sample_match_markdown
+
+    expected_headings = [
+        "INITIAL ALL CAPS HEADING",
+        "Heading 2",
+        "Heading 3",
+        "Inline Heading",
+        "ANOTHER HEADING WITHOUT MARKESR",
+    ]
+
+    parsed_text = process_text(
+        text=text,
+        metadata={"source": "unit_test", "id": 123},
+        expected_headings=expected_headings,
+        match_threshold=80,
+    )
+
+    actual_output = parsed_text.to_dict()
+
+    assert type(parsed_text) is ParsedText
+    assert actual_output == sample_match_json

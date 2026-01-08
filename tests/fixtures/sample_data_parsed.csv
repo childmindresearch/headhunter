@@ -1,0 +1,14 @@
+id,category,priority,start_line,level,length,parents,parent_types,content
+doc1,A,1,3,2,45,['Document 1'],['#1'],This is the first document with some content.
+doc1,A,1,7,3,18,"['Document 1', 'Section 1.1']","['#1', '#2']",More details here.
+doc2,B,2,5,3,25,"['Document 2', 'Overview']","['#1', '#2']",Second document overview.
+doc2,B,2,9,4,15,"['Document 2', 'Overview', 'Details']","['#1', '#2', '#3']",Nested content.
+doc3,A,3,1,2,1,['Document number'],['*2-inline'],3
+doc3,A,3,3,2,8,['Document type'],['*2-inline'],Markdown
+doc3,A,3,5,1,39,[],[],Simple document with minimal structure.
+doc4,C,1,5,3,16,"['Document 4', 'Introduction']","['#1', '#2']",Fourth document.
+doc4,C,1,9,3,15,"['Document 4', 'Conclusion']","['#1', '#2']",Final thoughts.
+doc5,B,2,3,2,36,['Document 5'],['*2'],A document with asterisk formatting.
+doc5,B,2,7,3,48,"['Document 5', 'Subsection']","['*2', '*3']",Fifth document with different heading hierarchy.
+doc5,B,2,11,4,32,"['Document 5', 'Subsection', 'Deeper Subsection']","['*2', '*3', '*1']",Content under deeper subsection.
+doc5,B,2,15,3,56,"['Document 5', 'Another Subsection']","['*2', '*3']",This should be at the same level as previous subsection.

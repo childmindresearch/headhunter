@@ -14,6 +14,8 @@ def process_text(
     text: str,
     config: _config.ParserConfig | dict[str, int | str] | None = None,
     metadata: dict[str, object] | None = None,
+    expected_headings: list[str] | None = None,
+    match_threshold: int = 80,
 ) -> models.ParsedText:
     """Processes a single markdown text string.
 
@@ -22,6 +24,10 @@ def process_text(
         config: Parser configuration. Can be a ParserConfig object or a dictionary
             of configuration parameters. If None, uses default configuration.
         metadata: Optional metadata to attach to the parsed document.
+        expected_headings: Optional list of expected heading strings to match.
+            If provided, performs fuzzy matching and extraction.
+        match_threshold: Minimum fuzzy match score (0-100) for heading matching.
+            Defaults to 80. Only used if expected_headings is provided.
 
     Returns:
         ParsedText object containing tokens, hierarchy, and warnings.
@@ -46,7 +52,7 @@ def process_text(
 
         all_warnings = tokenizer_warnings + hierarchy_warnings
 
-        return models.ParsedText(
+        parsed_text = models.ParsedText(
             text=text,
             config=config,
             metadata=metadata,
@@ -54,6 +60,11 @@ def process_text(
             hierarchy=hierarchies,
             warnings=all_warnings,
         )
+
+        if expected_headings:
+            parsed_text = parsed_text.match_headings(expected_headings, match_threshold)
+
+        return parsed_text
 
     except Exception as e:
         # Wrap in ParsingError - traceback will be captured by caller
@@ -71,6 +82,8 @@ def process_batch_df(
     id_column: str | None = None,
     metadata_columns: list[str] | None = None,
     config: _config.ParserConfig | dict[str, int | str] | None = None,
+    expected_headings: list[str] | None = None,
+    match_threshold: int = 80,
 ) -> models.ParsedBatch:
     """Processes a batch of markdown documents from a DataFrame.
 
@@ -84,6 +97,10 @@ def process_batch_df(
             as document metadata. Defaults to None.
         config: Parser configuration. Can be a ParserConfig object or a dictionary
             of configuration parameters. If None, uses default configuration.
+        expected_headings: Optional list of expected heading strings to match
+            across all documents. If provided, performs fuzzy matching.
+        match_threshold: Minimum fuzzy match score (0-100) for heading matching.
+            Defaults to 80. Only used if expected_headings is provided.
 
     Returns:
         ParsedBatch object containing successfully parsed documents
@@ -142,7 +159,7 @@ def process_batch_df(
             documents.append(parsed_doc)
 
         except models.ParsingError as e:
-            doc_id = doc_metadata.get("id", "unknown")
+            doc_id = doc_metadata["id"]
             logger.warning(f"Parsing error for doc_id {doc_id} at row {idx}: {str(e)}")
             tb = traceback.format_exc()
             error_dict = {
@@ -157,7 +174,7 @@ def process_batch_df(
 
         except Exception as e:
             # Unexpected error - still collect it
-            doc_id = doc_metadata.get("id", "unknown")
+            doc_id = doc_metadata["id"]
             logger.error(f"Unexpected error for doc_id {doc_id} at row {idx}: {str(e)}")
             tb = traceback.format_exc()
             error_dict = {
@@ -170,12 +187,23 @@ def process_batch_df(
             }
             errors.append(error_dict)
 
+    all_warnings: list[str] = []
+    for doc in documents:
+        doc_id = str(doc.metadata["id"])
+        for warning in doc.warnings:
+            all_warnings.append(f"[{doc_id}] {warning}")
+
     batch = models.ParsedBatch(
         documents=documents,
         config=config,
         errors=errors,
+        warnings=all_warnings,
         metadata_columns=metadata_columns,
     )
+
+    if expected_headings:
+        batch = batch.match_headings(expected_headings, match_threshold)
+
     logger.info(
         f"Batch processing complete: {len(documents)} successful, {len(errors)} errors"
     )

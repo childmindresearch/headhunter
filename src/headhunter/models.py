@@ -11,6 +11,115 @@ logger = _config.get_logger(__name__)
 
 
 @dataclasses.dataclass
+class HeadingMetadata:
+    """Structured metadata for heading tokens.
+
+    Attributes:
+        marker: The formatting marker ('#', '*', or None for markerless).
+        marker_count: Number of markers (1-6 for '#', 1-3 for '*', 0 for markerless).
+        case: Text case pattern ('all_caps', 'title_case', 'sentence_case', etc.).
+        is_inline: Whether heading appears inline with colon format (e.g., **Label:**).
+        is_extracted: Whether heading was extracted by matcher (vs only parsed).
+        extraction_position: Position when extracted ("inline", "standalone", or None).
+    """
+
+    marker: str | None
+    marker_count: int
+    case: str
+    is_inline: bool
+    is_extracted: bool = False
+    extraction_position: str | None = None
+
+    def __post_init__(self) -> None:
+        """Validate metadata consistency."""
+        if self.marker not in ("#", "*", None):
+            raise ValueError(f"Invalid marker: {self.marker}")
+        if self.marker == "#" and (self.marker_count < 1 or self.marker_count > 6):
+            raise ValueError(f"Invalid marker_count for #: {self.marker_count}")
+        if self.marker == "*" and (self.marker_count < 1 or self.marker_count > 3):
+            raise ValueError(f"Invalid marker_count for *: {self.marker_count}")
+        if self.marker is None and self.marker_count != 0:
+            raise ValueError(
+                f"Invalid marker_count for markerless: {self.marker_count}"
+            )
+        if self.case not in (
+            "all_caps",
+            "all_lowercase",
+            "title_case",
+            "sentence_case",
+            "unknown",
+        ):
+            raise ValueError(f"Invalid case: {self.case}")
+        if self.is_inline and self.marker != "*":
+            raise ValueError("Only asterisk headings can be inline")
+        if self.is_extracted and self.extraction_position is None:
+            raise ValueError("extraction_position required when is_extracted=True")
+        if self.extraction_position not in ("inline", "standalone", None):
+            raise ValueError(f"Invalid extraction_position: {self.extraction_position}")
+
+    @property
+    def signature(self) -> str:
+        """Generate heading type signature.
+
+        Examples:
+            - "#1" → hash heading with 1 hash
+            - "#2-CAPS" → all-caps hash heading with 2 hashes
+            - "*2" → bold heading
+            - "*2-inline" → inline bold heading with colon
+            - "extracted-inline-#2" → extracted inline hash heading
+            - "extracted-inline-*2-inline" → extracted inline bold heading with colon
+
+        Returns:
+            A compact string signature representing the heading type.
+        """
+        if self.marker is None:
+            sig = "markerless"
+        else:
+            sig = f"{self.marker}{self.marker_count}"
+
+        if self.case == "all_caps":
+            sig += "-CAPS"
+        if self.is_inline:
+            sig += "-inline"
+
+        if self.is_extracted:
+            sig = f"extracted-{self.extraction_position}-{sig}"
+
+        return sig
+
+    @property
+    def is_hash(self) -> bool:
+        """Check if this is a hash heading."""
+        return self.marker == "#"
+
+    @property
+    def is_asterisk(self) -> bool:
+        """Check if this is an asterisk heading."""
+        return self.marker == "*"
+
+    @property
+    def is_all_caps(self) -> bool:
+        """Check if heading is all caps."""
+        return self.case == "all_caps"
+
+    def to_dict(self) -> dict[str, str | int | bool | None]:
+        """Convert to dictionary for serialization.
+
+        Returns:
+            Dictionary representation of metadata.
+        """
+        return {
+            "marker": self.marker,
+            "marker_count": self.marker_count,
+            "case": self.case,
+            "is_inline": self.is_inline,
+            "is_extracted": self.is_extracted,
+            "extraction_position": self.extraction_position,
+            "signature": self.signature,
+        }
+
+
+@dataclasses.dataclass(frozen=True)
 class Token:
     """Represents a parsed token from a markdown document.
 
@@ -18,17 +127,22 @@ class Token:
         type: The type of token ('heading' or 'content').
         content: The text content of the token.
         line_number: The line number where the token appears in the source document.
-        metadata: Additional metadata about the token. For headings, includes:
-            - marker: The formatting marker ('#' or '*')
-            - marker_count: Number of markers (1-6 for '#', 1-3 for '*')
-            - case: Text case ('all_caps', 'title_case', 'sentence_case', etc.)
-            - position: Heading position ('standalone' or 'inline')
+        metadata: Heading metadata (HeadingMetadata for headings, None for content).
     """
 
     type: str
     content: str
     line_number: int
-    metadata: dict[str, str | int]
+    metadata: HeadingMetadata | None
+
+    def __post_init__(self) -> None:
+        """Validate token consistency."""
+        if self.type not in ("heading", "content"):
+            raise ValueError(f"Invalid token type: {self.type}")
+        if self.type == "heading" and self.metadata is None:
+            raise ValueError("Heading tokens must have metadata")
+        if self.type == "content" and self.metadata is not None:
+            raise ValueError("Content tokens must not have metadata")
 
 
 @dataclasses.dataclass
@@ -104,7 +218,9 @@ class ParsedText:
     def __post_init__(self) -> None:
         """Auto-generate ID from content hash if not provided in metadata."""
         if "id" not in self.metadata:
-            logger.warning("No document ID found. Generating one from content hash.")
+            warning_msg = "No document ID found. Generating one from content hash."
+            self.warnings.append(warning_msg)
+            logger.warning(warning_msg)
             self.metadata["id"] = hashlib.sha256(self.text.encode("utf-8")).hexdigest()
 
     def __repr__(self) -> str:
@@ -183,6 +299,51 @@ class ParsedText:
         doc_id = str(self.metadata["id"])
         return output.to_dataframe(self.hierarchy, doc_id, self.metadata)
 
+    def match_headings(
+        self, expected_headings: list[str], threshold: int = 80
+    ) -> "ParsedText":
+        """Matches expected headings against document with fuzzy extraction.
+
+        Validates expected headings against parsed tokens. When exact matches fail,
+        uses fuzzy matching with pattern detection to extract embedded headings from
+        content blocks. Splits content at heading boundaries. Hierarchy is rebuilt after
+        all matching completes.
+
+        Args:
+            expected_headings: List of heading strings to find in document.
+            threshold: Minimum fuzzy match score (0-100). Defaults to 80.
+
+        Returns:
+            New ParsedText with updated tokens, hierarchy, and match statistics
+            in metadata.
+        """
+        from headhunter import hierarchy, matcher
+
+        new_warnings = self.warnings.copy()
+
+        updated_tokens, statistics, match_warnings = matcher.match_headings(
+            self.tokens, expected_headings, threshold, self.config
+        )
+
+        new_warnings.extend(match_warnings)
+
+        hierarchy_builder = hierarchy.HierarchyBuilder()
+        new_hierarchy, hierarchy_warnings = hierarchy_builder.build(updated_tokens)
+
+        new_warnings.extend(hierarchy_warnings)
+
+        new_metadata = self.metadata.copy()
+        new_metadata.update(statistics)
+
+        return ParsedText(
+            text=self.text,
+            config=self.config,
+            metadata=new_metadata,
+            tokens=updated_tokens,
+            hierarchy=new_hierarchy,
+            warnings=new_warnings,
+        )
+
 
 @dataclasses.dataclass(frozen=True)
 class ParsedBatch:
@@ -197,6 +358,7 @@ class ParsedBatch:
         errors: List of error dictionaries for failed documents.
             Each error dict contains: doc_id, error_type, message,
             line_number, traceback, row_index.
+        metadata: Additional metadata for the batch (e.g., match statistics).
         metadata_columns: List of metadata column names that were specified
             during batch processing. Used when converting to dataframe.
     """
@@ -204,6 +366,8 @@ class ParsedBatch:
     documents: list[ParsedText]
     config: _config.ParserConfig
     errors: list[dict[str, str | int | None]]
+    warnings: list[str] = dataclasses.field(default_factory=list)
+    metadata: dict[str, object] = dataclasses.field(default_factory=dict)
     metadata_columns: list[str] | None = None
 
     def __repr__(self) -> str:
@@ -211,12 +375,24 @@ class ParsedBatch:
         total = len(self.documents) + len(self.errors)
         success_rate = f"{len(self.documents) / total:.0%}" if total > 0 else "N/A"
         error_str = f"{len(self.errors)}" if self.errors else "none"
+        warning_str = f"{len(self.warnings)}" if self.warnings else "none"
+
+        match_info = ""
+        if "avg_match_percentage" in self.metadata:
+            avg_match = self.metadata["avg_match_percentage"]
+            perfect_rate = self.metadata["perfect_match_rate"]
+            match_info = (
+                f"  avg match percentage: {avg_match:.1f}%\n"
+                f"  perfect match rate: {perfect_rate:.0%}\n"
+            )
 
         return (
             "ParsedBatch(\n"
             f"  total documents: {total}\n"
             f"  parsed successfully: {len(self.documents)} ({success_rate})\n"
             f"  errors: {error_str}\n"
+            f"  warnings: {warning_str}\n"
+            f"{match_info}"
             ")"
         )
 
@@ -225,14 +401,22 @@ class ParsedBatch:
 
         Returns:
             Dictionary with 'documents' key containing list of document dicts,
-            and 'errors' key containing error information.
+            'errors' key containing error information, and 'metadata' with
+            batch-level statistics.
         """
-        return {
+        result = {
             "documents": [doc.to_dict() for doc in self.documents],
             "errors": self.errors,
+            "warnings": self.warnings,
             "total_documents": len(self.documents),
             "total_errors": len(self.errors),
+            "total_warnings": len(self.warnings),
         }
+
+        if self.metadata:
+            result["metadata"] = dict(self.metadata)
+
+        return result
 
     def to_json(self, output_dir: str, indent: int = 2) -> list[str]:
         """Exports each document to individual JSON files in the output directory.
@@ -273,10 +457,90 @@ class ParsedBatch:
         Returns:
             DataFrame with all content rows from all documents,
             including any metadata columns specified during batch processing.
+            Batch-level metadata (e.g., match statistics) is stored in the
+            DataFrame's attrs dictionary.
         """
         from headhunter import output
 
-        return output.batch_to_dataframe(self.documents, self.metadata_columns)
+        df = output.batch_to_dataframe(self.documents, self.metadata_columns)
+
+        if self.metadata:
+            df.attrs.update(self.metadata)
+
+        if self.warnings:
+            df.attrs["warnings"] = self.warnings
+            df.attrs["total_warnings"] = len(self.warnings)
+
+        return df
+
+    def match_headings(
+        self, expected_headings: list[str], threshold: int = 80
+    ) -> "ParsedBatch":
+        """Matches expected headings across all documents in the batch.
+
+        Applies heading matching to each document. Computes and stores batch-level
+        statistics including average match percentage, perfect match rate, and
+        aggregated missing/matched heading counts.
+
+        Args:
+            expected_headings: List of heading strings to find in each document.
+            threshold: Minimum fuzzy match score (0-100). Defaults to 80.
+
+        Returns:
+            New ParsedBatch with updated documents and batch-level statistics
+            in metadata.
+        """
+        updated_documents: list[ParsedText] = []
+        match_percentages: list[float] = []
+        all_matched_headings: list[dict] = []
+        all_missing_headings: list[str] = []
+        all_warnings: list[str] = []
+
+        for doc in self.documents:
+            updated_doc = doc.match_headings(expected_headings, threshold)
+            updated_documents.append(updated_doc)
+
+            match_pct = updated_doc.metadata["match_percentage"]
+            assert type(match_pct) is float
+            match_percentages.append(float(match_pct))
+
+            matched = updated_doc.metadata["matched_headings"]
+            assert type(matched) is list
+            all_matched_headings.extend(matched)
+
+            missing = updated_doc.metadata["missing_headings"]
+            assert type(missing) is list
+            all_missing_headings.extend(missing)
+
+            doc_id = str(updated_doc.metadata["id"])
+            for warning in updated_doc.warnings:
+                all_warnings.append(f"[{doc_id}] {warning}")
+
+        avg_match_percentage = sum(match_percentages) / len(match_percentages)
+        perfect_matches = sum(1 for pct in match_percentages if pct == 100.0)
+        perfect_match_rate = perfect_matches / len(match_percentages)
+
+        batch_metadata = self.metadata.copy()
+        batch_metadata.update(
+            {
+                "avg_match_percentage": round(avg_match_percentage, 2),
+                "perfect_match_rate": round(perfect_match_rate, 2),
+                "documents_with_perfect_match": perfect_matches,
+                "total_matched_headings": len(all_matched_headings),
+                "total_missing_headings": len(all_missing_headings),
+                "expected_headings_count": len(expected_headings),
+                "threshold": threshold,
+            }
+        )
+
+        return ParsedBatch(
+            documents=updated_documents,
+            config=self.config,
+            errors=self.errors,
+            warnings=all_warnings,
+            metadata=batch_metadata,
+            metadata_columns=self.metadata_columns,
+        )
 
 
 class ParsingError(Exception):

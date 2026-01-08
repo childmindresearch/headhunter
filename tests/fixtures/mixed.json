@@ -1,0 +1,224 @@
+{
+    "source": "unit_test",
+    "id": 123,
+    "sections": [
+        {
+            "type": "heading",
+            "text": "A MIXED DOCUMENT WITH VARIOUS HEADINGS",
+            "level": 1,
+            "line_number": 1,
+            "metadata": {
+                "marker": "*",
+                "marker_count": 2,
+                "case": "all_caps",
+                "is_inline": false,
+                "is_extracted": false,
+                "extraction_position": null,
+                "signature": "*2-CAPS"
+            },
+            "sections": [
+                {
+                    "type": "content",
+                    "text": "A document that starts with an asterisk ALL-CAPS heading.",
+                    "level": 2,
+                    "line_number": 3
+                },
+                {
+                    "type": "heading",
+                    "text": "A Second-Level Heading",
+                    "level": 2,
+                    "line_number": 5,
+                    "metadata": {
+                        "marker": "#",
+                        "marker_count": 2,
+                        "case": "title_case",
+                        "is_inline": false,
+                        "is_extracted": false,
+                        "extraction_position": null,
+                        "signature": "#2"
+                    },
+                    "sections": [
+                        {
+                            "type": "content",
+                            "text": "But there is no first-level hash heading above.",
+                            "level": 3,
+                            "line_number": 7
+                        },
+                        {
+                            "type": "heading",
+                            "text": "An inline heading",
+                            "level": 3,
+                            "line_number": 9,
+                            "metadata": {
+                                "marker": "*",
+                                "marker_count": 2,
+                                "case": "sentence_case",
+                                "is_inline": true,
+                                "is_extracted": false,
+                                "extraction_position": null,
+                                "signature": "*2-inline"
+                            },
+                            "sections": [
+                                {
+                                    "type": "content",
+                                    "text": "This is an inline heading using asterisks.",
+                                    "level": 4,
+                                    "line_number": 9
+                                }
+                            ]
+                        },
+                        {
+                            "type": "heading",
+                            "text": "Subsection",
+                            "level": 3,
+                            "line_number": 11,
+                            "metadata": {
+                                "marker": "*",
+                                "marker_count": 3,
+                                "case": "title_case",
+                                "is_inline": false,
+                                "is_extracted": false,
+                                "extraction_position": null,
+                                "signature": "*3"
+                            },
+                            "sections": [
+                                {
+                                    "type": "content",
+                                    "text": "A subsection that is both bold and italic.",
+                                    "level": 4,
+                                    "line_number": 13
+                                },
+                                {
+                                    "type": "heading",
+                                    "text": "Deeper Subsection",
+                                    "level": 4,
+                                    "line_number": 15,
+                                    "metadata": {
+                                        "marker": "*",
+                                        "marker_count": 1,
+                                        "case": "title_case",
+                                        "is_inline": false,
+                                        "is_extracted": false,
+                                        "extraction_position": null,
+                                        "signature": "*1"
+                                    },
+                                    "sections": [
+                                        {
+                                            "type": "content",
+                                            "text": "A subsection that is only italic. This should be nested under the previous subsection that is both bold and italic.",
+                                            "level": 5,
+                                            "line_number": 17
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "heading",
+                            "text": "Another Subsection",
+                            "level": 3,
+                            "line_number": 19,
+                            "metadata": {
+                                "marker": "*",
+                                "marker_count": 3,
+                                "case": "title_case",
+                                "is_inline": false,
+                                "is_extracted": false,
+                                "extraction_position": null,
+                                "signature": "*3"
+                            },
+                            "sections": [
+                                {
+                                    "type": "content",
+                                    "text": "This should be at the same level as previous subsection.",
+                                    "level": 4,
+                                    "line_number": 21
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "text": "THIS IS ALL CAPS AND FIRST-LEVEL",
+            "level": 1,
+            "line_number": 23,
+            "metadata": {
+                "marker": "#",
+                "marker_count": 1,
+                "case": "all_caps",
+                "is_inline": false,
+                "is_extracted": false,
+                "extraction_position": null,
+                "signature": "#1-CAPS"
+            },
+            "sections": [
+                {
+                    "type": "heading",
+                    "text": "Another Second-Level Heading",
+                    "level": 2,
+                    "line_number": 25,
+                    "metadata": {
+                        "marker": "#",
+                        "marker_count": 2,
+                        "case": "title_case",
+                        "is_inline": false,
+                        "is_extracted": false,
+                        "extraction_position": null,
+                        "signature": "#2"
+                    },
+                    "sections": [
+                        {
+                            "type": "content",
+                            "text": "This should be at the same level as the first second-level heading.",
+                            "level": 3,
+                            "line_number": 27
+                        },
+                        {
+                            "type": "heading",
+                            "text": "A Third-Level Heading Without Text",
+                            "level": 3,
+                            "line_number": 29,
+                            "metadata": {
+                                "marker": "#",
+                                "marker_count": 3,
+                                "case": "title_case",
+                                "is_inline": false,
+                                "is_extracted": false,
+                                "extraction_position": null,
+                                "signature": "#3"
+                            },
+                            "sections": [
+                                {
+                                    "type": "heading",
+                                    "text": "This is a bolded asterisk heading",
+                                    "level": 4,
+                                    "line_number": 31,
+                                    "metadata": {
+                                        "marker": "*",
+                                        "marker_count": 2,
+                                        "case": "sentence_case",
+                                        "is_inline": false,
+                                        "is_extracted": false,
+                                        "extraction_position": null,
+                                        "signature": "*2"
+                                    },
+                                    "sections": [
+                                        {
+                                            "type": "content",
+                                            "text": "And it has some content.\n\nTHIS IS ALL CAPS BUT NOT A HEADING\n\n## This should not count as a heading because it is too long\n\nThis is just a normal paragraph following the long line that looked like a heading.",
+                                            "level": 5,
+                                            "line_number": 33
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

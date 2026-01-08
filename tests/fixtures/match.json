@@ -1,0 +1,182 @@
+{
+    "source": "unit_test",
+    "id": 123,
+    "match_percentage": 100.0,
+    "missing_headings": [],
+    "matched_headings": [
+        {
+            "expected": "INITIAL ALL CAPS HEADING",
+            "matched_text": "INITIAL ALL CAPS HEADING",
+            "extraction_method": "existing_heading",
+            "confidence": 100.0,
+            "line_number": 3,
+            "heading_signature": "#1-CAPS",
+            "was_extracted": false
+        },
+        {
+            "expected": "Heading 2",
+            "matched_text": "Heading 2",
+            "extraction_method": "extracted_from_content",
+            "confidence": 100.0,
+            "line_number": 5,
+            "heading_signature": "extracted-inline-#2",
+            "was_extracted": true
+        },
+        {
+            "expected": "Heading 3",
+            "matched_text": "heading 3",
+            "extraction_method": "extracted_from_content",
+            "confidence": 100.0,
+            "line_number": 7,
+            "heading_signature": "extracted-inline-*2",
+            "was_extracted": true
+        },
+        {
+            "expected": "Inline Heading",
+            "matched_text": "Inline Heading",
+            "extraction_method": "extracted_from_content",
+            "confidence": 100.0,
+            "line_number": 9,
+            "heading_signature": "extracted-inline-*2-inline",
+            "was_extracted": true
+        },
+        {
+            "expected": "ANOTHER HEADING WITHOUT MARKESR",
+            "matched_text": "ANOTHER ALL CAPS HEADING WITHOUT MARKERS",
+            "extraction_method": "extracted_from_content",
+            "confidence": 83.64,
+            "line_number": 13,
+            "heading_signature": "extracted-standalone-markerless-CAPS",
+            "was_extracted": true
+        }
+    ],
+    "sections": [
+        {
+            "type": "content",
+            "text": "This document contains headings that does not follow the expected markdown syntax.",
+            "level": 1,
+            "line_number": 1
+        },
+        {
+            "type": "heading",
+            "text": "INITIAL ALL CAPS HEADING",
+            "level": 1,
+            "line_number": 3,
+            "metadata": {
+                "marker": "#",
+                "marker_count": 1,
+                "case": "all_caps",
+                "is_inline": false,
+                "is_extracted": false,
+                "extraction_position": null,
+                "signature": "#1-CAPS"
+            },
+            "sections": [
+                {
+                    "type": "content",
+                    "text": "For example this",
+                    "level": 2,
+                    "line_number": 5
+                },
+                {
+                    "type": "heading",
+                    "text": "Heading 2",
+                    "level": 2,
+                    "line_number": 5,
+                    "metadata": {
+                        "marker": "#",
+                        "marker_count": 2,
+                        "case": "title_case",
+                        "is_inline": false,
+                        "is_extracted": true,
+                        "extraction_position": "inline",
+                        "signature": "extracted-inline-#2"
+                    },
+                    "sections": [
+                        {
+                            "type": "content",
+                            "text": "should be captured and the rest of this line should be its content.\n\nThis line should also continue to be content of Heading 2. Sometimes the headings are in bold like",
+                            "level": 3,
+                            "line_number": 5
+                        },
+                        {
+                            "type": "heading",
+                            "text": "heading 3",
+                            "level": 3,
+                            "line_number": 7,
+                            "metadata": {
+                                "marker": "*",
+                                "marker_count": 2,
+                                "case": "all_lowercase",
+                                "is_inline": false,
+                                "is_extracted": true,
+                                "extraction_position": "inline",
+                                "signature": "extracted-inline-*2"
+                            },
+                            "sections": [
+                                {
+                                    "type": "content",
+                                    "text": "and they should also be captured correctly.\n\nOther times, new lines get deleted by mistake and headings appear inline like this",
+                                    "level": 4,
+                                    "line_number": 7
+                                },
+                                {
+                                    "type": "heading",
+                                    "text": "Inline Heading",
+                                    "level": 4,
+                                    "line_number": 9,
+                                    "metadata": {
+                                        "marker": "*",
+                                        "marker_count": 2,
+                                        "case": "title_case",
+                                        "is_inline": true,
+                                        "is_extracted": true,
+                                        "extraction_position": "inline",
+                                        "signature": "extracted-inline-*2-inline"
+                                    },
+                                    "sections": [
+                                        {
+                                            "type": "content",
+                                            "text": "with the rest of the line being its content.",
+                                            "level": 5,
+                                            "line_number": 9
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "content",
+                                    "text": "But this line is just a normal sentence without any heading.",
+                                    "level": 4,
+                                    "line_number": 11
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "text": "ANOTHER ALL CAPS HEADING WITHOUT MARKERS",
+            "level": 1,
+            "line_number": 13,
+            "metadata": {
+                "marker": null,
+                "marker_count": 0,
+                "case": "all_caps",
+                "is_inline": false,
+                "is_extracted": true,
+                "extraction_position": "standalone",
+                "signature": "extracted-standalone-markerless-CAPS"
+            },
+            "sections": [
+                {
+                    "type": "content",
+                    "text": "Second all caps heading should be the same level as the initial one and this line should be considered its content.",
+                    "level": 2,
+                    "line_number": 15
+                }
+            ]
+        }
+    ]
+}

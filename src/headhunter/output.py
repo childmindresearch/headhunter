@@ -23,9 +23,18 @@ def _pop_stack_to_parent_level(
 
     Returns:
         The parent section dictionary.
+
+    Raises:
+        ValueError: If stack is empty.
     """
+    if not stack:
+        error_msg = "Stack is empty when attempting to pop to parent level."
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+
     while len(stack) > 1 and stack[-1][0] >= current_level:
         stack.pop()
+
     return stack[-1][1]
 
 
@@ -45,8 +54,10 @@ def to_dict(
         and child sections.
     """
     if not hierarchy:
+        logger.warning("Hierarchy is empty; returning only metadata or empty dict.")
         return {**metadata} if metadata else {}
 
+    logger.debug(f"Converting hierarchy with {len(hierarchy)} tokens to dictionary")
     root: dict[str, object] = {**(metadata or {}), "sections": []}
 
     # Stack: list[(level, section_dict)]
@@ -61,12 +72,12 @@ def to_dict(
                 "text": token.content,
                 "level": ctx.level,
                 "line_number": token.line_number,
-                "metadata": token.metadata,
+                "metadata": token.metadata.to_dict() if token.metadata else None,
                 "sections": [],
             }
 
             parent = _pop_stack_to_parent_level(stack, ctx.level)
-            assert type(parent["sections"]) is list
+            assert type(parent["sections"]) is list  # for mypy
             parent["sections"].append(section)
             stack.append((ctx.level, section))
 
@@ -80,7 +91,7 @@ def to_dict(
                 "line_number": token.line_number,
             }
 
-            assert type(parent["sections"]) is list
+            assert type(parent["sections"]) is list  # for mypy
             parent["sections"].append(content_item)
 
     return root
@@ -129,12 +140,10 @@ def to_tree_string(
     Returns:
         Tree structure as a string.
     """
-    # Filter to only heading contexts
     heading_contexts = [ctx for ctx in hierarchy if ctx.token.type == "heading"]
 
     lines: list[str] = []
 
-    # Add metadata heading if provided
     if metadata_heading:
         lines.append("Metadata")
         lines.append("-" * 80)
@@ -144,7 +153,12 @@ def to_tree_string(
 
     if not heading_contexts:
         lines.append("No headings found")
+        logger.warning("No headings found in hierarchy for tree string output.")
         return "\n".join(lines)
+
+    logger.debug(
+        f"Converting hierarchy with {len(heading_contexts)} headings to tree string"
+    )
 
     lines.append("Document Structure")
     lines.append("=" * 80)
@@ -166,7 +180,6 @@ def to_tree_string(
 
         level_has_more[ctx.level] = has_more_siblings
 
-        # Build tree prefix
         prefix = ""
         for level in range(1, ctx.level):
             if level in level_has_more and level_has_more[level]:
@@ -174,22 +187,18 @@ def to_tree_string(
             else:
                 prefix += "    "
 
-        # Add branch character
         if ctx.level > 1:
             if has_more_siblings:
                 prefix += "├── "
             else:
                 prefix += "└── "
 
-        # Build label
         label = heading.content
 
-        # Add type indicator
-        if show_type:
-            type_sig = heading.metadata["heading_type"]
+        if show_type and heading.metadata:
+            type_sig = heading.metadata.signature
             label += f" [{type_sig}]"
 
-        # Add line number
         if show_line_numbers:
             label += f" (line {heading.line_number})"
 
@@ -229,6 +238,7 @@ def batch_to_json_files(
     """
     output_path = _ensure_output_directory(output_dir)
 
+    logger.debug(f"Exporting {len(documents)} documents to JSON files in {output_dir}")
     created_files: list[str] = []
 
     for doc in documents:
@@ -302,7 +312,20 @@ def _to_dataframe_rows(
         List of dictionaries, one per content token, containing:
         id, metadata fields, start_line, level, length, parents,
         parent_types, content.
+
+    Raises:
+        ValueError: If hierarchy is None or doc_id is empty.
     """
+    if hierarchy is None:
+        error_msg = "hierarchy parameter cannot be None"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+
+    if not doc_id or not doc_id.strip():
+        error_msg = "doc_id parameter cannot be empty"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+
     rows: list[dict[str, object]] = []
 
     for ctx in hierarchy:
@@ -406,6 +429,8 @@ def to_dataframe(
     if not rows:
         return _create_empty_dataframe(metadata)
 
+    logger.debug(f"Converting document {doc_id} to DataFrame with {len(rows)} rows")
+
     result_df = pd.DataFrame(rows)
     return _order_dataframe_columns(result_df, metadata)
 
@@ -419,7 +444,9 @@ def batch_to_dataframe(
     Args:
         documents: List of ParsedText objects.
         metadata_columns: Optional list of metadata keys to include as
-            columns in output DataFrame.
+            columns in output DataFrame. Match-related metadata
+            (match_percentage, missing_headings, matched_headings) is
+            automatically included if present.
 
     Returns:
         DataFrame where each row is a content token with hierarchical
@@ -428,16 +455,24 @@ def batch_to_dataframe(
     if not documents:
         return _create_empty_dataframe(metadata_columns)
 
+    logger.debug(f"Converting batch of {len(documents)} documents to DataFrame")
     all_rows: list[dict[str, object]] = []
+
+    match_metadata_keys = {"match_percentage", "missing_headings", "matched_headings"}
 
     for doc in documents:
         doc_id = str(doc.metadata["id"])
 
         metadata_dict = {}
+
         if metadata_columns:
             for col in metadata_columns:
                 if col in doc.metadata:
                     metadata_dict[col] = doc.metadata[col]
+
+        for key in match_metadata_keys:
+            if key in doc.metadata:
+                metadata_dict[key] = doc.metadata[key]
 
         rows = _to_dataframe_rows(doc.hierarchy, doc_id, metadata_dict)
         all_rows.extend(rows)
@@ -446,4 +481,15 @@ def batch_to_dataframe(
         return _create_empty_dataframe(metadata_columns)
 
     result_df = pd.DataFrame(all_rows)
-    return _order_dataframe_columns(result_df, metadata_columns)
+
+    # Combine metadata_columns with match keys for column ordering
+    all_metadata_keys = list(metadata_columns) if metadata_columns else []
+    for key in match_metadata_keys:
+        if key not in all_metadata_keys and any(
+            key in doc.metadata for doc in documents
+        ):
+            all_metadata_keys.append(key)
+
+    return _order_dataframe_columns(
+        result_df, all_metadata_keys if all_metadata_keys else None
+    )
