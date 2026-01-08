@@ -1,0 +1,100 @@
+{
+    "row_index": 4,
+    "id": "doc5",
+    "category": "B",
+    "priority": 2,
+    "sections": [
+        {
+            "type": "heading",
+            "text": "Document 5",
+            "level": 1,
+            "line_number": 1,
+            "metadata": {
+                "marker": "*",
+                "marker_count": 2,
+                "case": "title_case",
+                "is_inline": false,
+                "is_extracted": false,
+                "extraction_position": null,
+                "signature": "*2"
+            },
+            "sections": [
+                {
+                    "type": "content",
+                    "text": "A document with asterisk formatting.",
+                    "level": 2,
+                    "line_number": 3
+                },
+                {
+                    "type": "heading",
+                    "text": "Subsection",
+                    "level": 2,
+                    "line_number": 5,
+                    "metadata": {
+                        "marker": "*",
+                        "marker_count": 3,
+                        "case": "title_case",
+                        "is_inline": false,
+                        "is_extracted": false,
+                        "extraction_position": null,
+                        "signature": "*3"
+                    },
+                    "sections": [
+                        {
+                            "type": "content",
+                            "text": "Fifth document with different heading hierarchy.",
+                            "level": 3,
+                            "line_number": 7
+                        },
+                        {
+                            "type": "heading",
+                            "text": "Deeper Subsection",
+                            "level": 3,
+                            "line_number": 9,
+                            "metadata": {
+                                "marker": "*",
+                                "marker_count": 1,
+                                "case": "title_case",
+                                "is_inline": false,
+                                "is_extracted": false,
+                                "extraction_position": null,
+                                "signature": "*1"
+                            },
+                            "sections": [
+                                {
+                                    "type": "content",
+                                    "text": "Content under deeper subsection.",
+                                    "level": 4,
+                                    "line_number": 11
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "heading",
+                    "text": "Another Subsection",
+                    "level": 2,
+                    "line_number": 13,
+                    "metadata": {
+                        "marker": "*",
+                        "marker_count": 3,
+                        "case": "title_case",
+                        "is_inline": false,
+                        "is_extracted": false,
+                        "extraction_position": null,
+                        "signature": "*3"
+                    },
+                    "sections": [
+                        {
+                            "type": "content",
+                            "text": "This should be at the same level as previous subsection.",
+                            "level": 3,
+                            "line_number": 15
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

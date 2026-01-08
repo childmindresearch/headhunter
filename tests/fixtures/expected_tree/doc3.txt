@@ -1,0 +1,11 @@
+Metadata
+--------------------------------------------------------------------------------
+row_index: 2
+id: doc3
+category: A
+priority: 3
+
+Document Structure
+================================================================================
+Document number [*2-inline] (line 1)
+Document type [*2-inline] (line 3)

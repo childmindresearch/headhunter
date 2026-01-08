@@ -1,0 +1,71 @@
+{
+    "row_index": 3,
+    "id": "doc4",
+    "category": "C",
+    "priority": 1,
+    "sections": [
+        {
+            "type": "heading",
+            "text": "Document 4",
+            "level": 1,
+            "line_number": 1,
+            "metadata": {
+                "marker": "#",
+                "marker_count": 1,
+                "case": "title_case",
+                "is_inline": false,
+                "is_extracted": false,
+                "extraction_position": null,
+                "signature": "#1"
+            },
+            "sections": [
+                {
+                    "type": "heading",
+                    "text": "Introduction",
+                    "level": 2,
+                    "line_number": 3,
+                    "metadata": {
+                        "marker": "#",
+                        "marker_count": 2,
+                        "case": "title_case",
+                        "is_inline": false,
+                        "is_extracted": false,
+                        "extraction_position": null,
+                        "signature": "#2"
+                    },
+                    "sections": [
+                        {
+                            "type": "content",
+                            "text": "Fourth document.",
+                            "level": 3,
+                            "line_number": 5
+                        }
+                    ]
+                },
+                {
+                    "type": "heading",
+                    "text": "Conclusion",
+                    "level": 2,
+                    "line_number": 7,
+                    "metadata": {
+                        "marker": "#",
+                        "marker_count": 2,
+                        "case": "title_case",
+                        "is_inline": false,
+                        "is_extracted": false,
+                        "extraction_position": null,
+                        "signature": "#2"
+                    },
+                    "sections": [
+                        {
+                            "type": "content",
+                            "text": "Final thoughts.",
+                            "level": 3,
+                            "line_number": 9
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

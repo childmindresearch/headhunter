@@ -1,0 +1,46 @@
+doc_id,content,category,priority
+doc1,"This document contains headings that does not follow the expected markdown syntax.
+
+# INITIAL ALL CAPS HEADING
+
+For example this ## Heading 2 should be captured and the rest of this line should be its content.
+
+This line should also continue to be content of Heading 2. Sometimes the headings are in bold like **heading 3** and they should also be captured correctly.
+
+Other times, new lines get deleted by mistake and headings appear inline like this **Inline Heading:** with the rest of the line being its content.
+
+But this line is just a normal sentence without any heading.
+
+ANOTHER ALL CAPS HEADING WITHOUT MARKERS
+
+Second all caps heading should be the same level as the initial one and this line should be considered its content.",A,1
+doc2,"This is a second document with similar structure.
+
+# INITIAL ALL CAPS HEADING
+
+Here we have ## Heading 2 inline again with content after it.
+
+More content continues. Bold headings like **heading 3** appear throughout.
+
+Sometimes **Inline Heading:** appears mid-paragraph with text following.
+
+Regular paragraph without headings here.
+
+ANOTHER ALL CAPS HEADING WITHOUT MARKERS
+
+This content belongs to the second all caps heading.",B,2
+doc3,"Third document example with partial matches.
+
+# INITIAL ALL CAPS HEADING
+
+Third instance of ## Heading 2 extracted from content line.
+
+Content paragraph. The **heading 3** pattern repeats here.
+
+An **Inline Heading:** with its content on the same line.
+
+Normal text paragraph.
+
+SOME OTHER HEADING
+
+This heading won't match the expected list.",C,3

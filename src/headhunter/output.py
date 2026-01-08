@@ -118,6 +118,7 @@ def to_json_file(
 
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(hierarchical_data, f, indent=indent, ensure_ascii=False)
+        f.write("\n")
 
     logger.debug(f"Exported JSON to {filepath}")
     return str(filepath)
@@ -204,7 +205,7 @@ def to_tree_string(
 
         lines.append(f"{prefix}{label}")
 
-    return "\n".join(lines)
+    return "\n".join(lines) + "\n"
 
 
 def _ensure_output_directory(output_dir: str | pathlib.Path) -> pathlib.Path:

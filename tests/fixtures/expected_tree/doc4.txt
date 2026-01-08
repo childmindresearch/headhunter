@@ -1,0 +1,12 @@
+Metadata
+--------------------------------------------------------------------------------
+row_index: 3
+id: doc4
+category: C
+priority: 1
+
+Document Structure
+================================================================================
+Document 4 [#1] (line 1)
+    ├── Introduction [#2] (line 3)
+    └── Conclusion [#2] (line 7)

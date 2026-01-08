@@ -1,0 +1,71 @@
+{
+    "row_index": 1,
+    "id": "doc2",
+    "category": "B",
+    "priority": 2,
+    "sections": [
+        {
+            "type": "heading",
+            "text": "Document 2",
+            "level": 1,
+            "line_number": 1,
+            "metadata": {
+                "marker": "#",
+                "marker_count": 1,
+                "case": "title_case",
+                "is_inline": false,
+                "is_extracted": false,
+                "extraction_position": null,
+                "signature": "#1"
+            },
+            "sections": [
+                {
+                    "type": "heading",
+                    "text": "Overview",
+                    "level": 2,
+                    "line_number": 3,
+                    "metadata": {
+                        "marker": "#",
+                        "marker_count": 2,
+                        "case": "title_case",
+                        "is_inline": false,
+                        "is_extracted": false,
+                        "extraction_position": null,
+                        "signature": "#2"
+                    },
+                    "sections": [
+                        {
+                            "type": "content",
+                            "text": "Second document overview.",
+                            "level": 3,
+                            "line_number": 5
+                        },
+                        {
+                            "type": "heading",
+                            "text": "Details",
+                            "level": 3,
+                            "line_number": 7,
+                            "metadata": {
+                                "marker": "#",
+                                "marker_count": 3,
+                                "case": "title_case",
+                                "is_inline": false,
+                                "is_extracted": false,
+                                "extraction_position": null,
+                                "signature": "#3"
+                            },
+                            "sections": [
+                                {
+                                    "type": "content",
+                                    "text": "Nested content.",
+                                    "level": 4,
+                                    "line_number": 9
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

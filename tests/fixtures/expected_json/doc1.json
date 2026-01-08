@@ -1,0 +1,54 @@
+{
+    "row_index": 0,
+    "id": "doc1",
+    "category": "A",
+    "priority": 1,
+    "sections": [
+        {
+            "type": "heading",
+            "text": "Document 1",
+            "level": 1,
+            "line_number": 1,
+            "metadata": {
+                "marker": "#",
+                "marker_count": 1,
+                "case": "title_case",
+                "is_inline": false,
+                "is_extracted": false,
+                "extraction_position": null,
+                "signature": "#1"
+            },
+            "sections": [
+                {
+                    "type": "content",
+                    "text": "This is the first document with some content.",
+                    "level": 2,
+                    "line_number": 3
+                },
+                {
+                    "type": "heading",
+                    "text": "Section 1.1",
+                    "level": 2,
+                    "line_number": 5,
+                    "metadata": {
+                        "marker": "#",
+                        "marker_count": 2,
+                        "case": "title_case",
+                        "is_inline": false,
+                        "is_extracted": false,
+                        "extraction_position": null,
+                        "signature": "#2"
+                    },
+                    "sections": [
+                        {
+                            "type": "content",
+                            "text": "More details here.",
+                            "level": 3,
+                            "line_number": 7
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,13 @@
+Metadata
+--------------------------------------------------------------------------------
+row_index: 4
+id: doc5
+category: B
+priority: 2
+
+Document Structure
+================================================================================
+Document 5 [*2] (line 1)
+    ├── Subsection [*3] (line 5)
+    │   └── Deeper Subsection [*1] (line 9)
+    └── Another Subsection [*3] (line 13)

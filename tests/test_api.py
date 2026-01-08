@@ -1,5 +1,8 @@
 """Tests for API entry points."""
 
+import json
+import pathlib
+
 import pandas as pd
 
 from headhunter.api import process_batch_df, process_text
@@ -27,12 +30,19 @@ def test_process_text(
 def test_process_batch_df(
     sample_dataframe: pd.DataFrame,
     sample_dataframe_parsed: pd.DataFrame,
+    expected_json_files: dict[str, dict],
+    expected_tree_files: dict[str, str],
+    tmp_path: pathlib.Path,
 ) -> None:
     """Test batch processing of DataFrame."""
     content_column = "content"
     id_column = "doc_id"
     metadata_columns = ["category", "priority"]
     df = sample_dataframe
+    json_dir = tmp_path / "json"
+    tree_dir = tmp_path / "tree"
+    json_dir.mkdir()
+    tree_dir.mkdir()
 
     parsed_batch = process_batch_df(
         df,
@@ -40,11 +50,27 @@ def test_process_batch_df(
         id_column=id_column,
         metadata_columns=metadata_columns,
     )
-
-    actual_output = parsed_batch.to_dataframe()
+    actual_dataframe = parsed_batch.to_dataframe()
+    json_files = parsed_batch.to_json(str(json_dir))
+    tree_files = parsed_batch.to_tree(str(tree_dir))
 
     assert type(parsed_batch) is ParsedBatch
-    assert actual_output.equals(sample_dataframe_parsed)
+    assert actual_dataframe.equals(sample_dataframe_parsed)
+
+    assert len(json_files) == len(expected_json_files)
+    for json_file_path in json_files:
+        filename = pathlib.Path(json_file_path).name
+        assert filename in expected_json_files
+        with open(json_file_path) as f:
+            actual_json = json.load(f)
+        assert actual_json == expected_json_files[filename]
+
+    assert len(tree_files) == len(expected_tree_files)
+    for tree_file_path in tree_files:
+        filename = pathlib.Path(tree_file_path).name
+        assert filename in expected_tree_files
+        actual_tree = pathlib.Path(tree_file_path).read_text()
+        assert actual_tree == expected_tree_files[filename]
 
 
 def test_process_text_with_matcher(
@@ -73,3 +99,38 @@ def test_process_text_with_matcher(
 
     assert type(parsed_text) is ParsedText
     assert actual_output == sample_match_json
+
+
+def test_process_batch_df_with_matcher(
+    sample_dataframe_match: pd.DataFrame,
+    sample_dataframe_match_parsed: pd.DataFrame,
+) -> None:
+    """Test batch processing of DataFrame with heading matcher."""
+    content_column = "content"
+    id_column = "doc_id"
+    metadata_columns = ["category", "priority"]
+    df = sample_dataframe_match
+
+    expected_headings = [
+        "INITIAL ALL CAPS HEADING",
+        "Heading 2",
+        "Heading 3",
+        "Inline Heading",
+        "ANOTHER HEADING WITHOUT MARKESR",
+    ]
+
+    parsed_batch = process_batch_df(
+        df,
+        content_column=content_column,
+        id_column=id_column,
+        metadata_columns=metadata_columns,
+        expected_headings=expected_headings,
+        match_threshold=80,
+    )
+
+    actual_output = parsed_batch.to_dataframe()
+    # Reorder expected columns to match actual output for comparison
+    actual_output = actual_output[sample_dataframe_match_parsed.columns]
+
+    assert type(parsed_batch) is ParsedBatch
+    assert actual_output.equals(sample_dataframe_match_parsed)

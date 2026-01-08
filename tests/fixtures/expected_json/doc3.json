@@ -1,0 +1,60 @@
+{
+    "row_index": 2,
+    "id": "doc3",
+    "category": "A",
+    "priority": 3,
+    "sections": [
+        {
+            "type": "heading",
+            "text": "Document number",
+            "level": 1,
+            "line_number": 1,
+            "metadata": {
+                "marker": "*",
+                "marker_count": 2,
+                "case": "sentence_case",
+                "is_inline": true,
+                "is_extracted": false,
+                "extraction_position": null,
+                "signature": "*2-inline"
+            },
+            "sections": [
+                {
+                    "type": "content",
+                    "text": "3",
+                    "level": 2,
+                    "line_number": 1
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "text": "Document type",
+            "level": 1,
+            "line_number": 3,
+            "metadata": {
+                "marker": "*",
+                "marker_count": 2,
+                "case": "title_case",
+                "is_inline": true,
+                "is_extracted": false,
+                "extraction_position": null,
+                "signature": "*2-inline"
+            },
+            "sections": [
+                {
+                    "type": "content",
+                    "text": "Markdown",
+                    "level": 2,
+                    "line_number": 3
+                }
+            ]
+        },
+        {
+            "type": "content",
+            "text": "Simple document with minimal structure.",
+            "level": 1,
+            "line_number": 5
+        }
+    ]
+}
