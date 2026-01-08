@@ -13,6 +13,7 @@ A parser for extracting headings and hierarchical structure from Markdown files.
 
 - Parse multiple heading formats (hash `#`, asterisk `**`, inline with colon, all-caps)
 - Build hierarchical structure from headings
+- **Fuzzy heading matching** to extract expected headings from improperly formatted documents
 - Process single documents or batches from DataFrames
 - Export results to DataFrame, JSON, or tree visualizations
 - Configurable parsing rules and word limits
@@ -111,6 +112,29 @@ parsed_batch.to_tree("tree_outputs/")
 df_parsed.to_csv("parsed_data.csv")
 ```
 
+**Extract headings from improperly formatted documents:**
+
+```python
+import headhunter
+
+# Document where headings are embedded inline or lack proper formatting
+messy_doc = """
+This document has ## Heading 1 embedded in text without line breaks.
+Then we have **heading 2** in bold but inline.
+**Inline Heading:** with content on the same line.
+"""
+
+# Specify expected headings to extract via fuzzy matching
+parsed = headhunter.process_text(
+    text=messy_doc,
+    expected_headings=["Heading 1", "heading 2", "Inline Heading"],
+    match_threshold=80  # 0-100, higher = stricter matching
+)
+
+# Match statistics are added to metadata
+print(parsed.metadata)  # includes: matched_count, expected_count, match_percentage
+```
+
 ## How Hierarchy is Built
 
 Headhunter recognizes different heading styles in Markdown and builds a hierarchical structure by assigning levels to each heading. The following rules govern this process:
@@ -172,3 +196,24 @@ When a heading ends with a colon (like `**Name:** Jane Doe`), it works different
 ### Mixed Heading Styles
 
 Different heading styles can be mixed in the same document. When switching from one style to another, the new heading typically goes one level deeper than the previous one. However, the specific rules for each style (described above) still apply.
+
+## Fuzzy Heading Matching
+
+When documents have inconsistent formatting, such as headings embedded inline within text, missing markdown markers, or improper line breaks, headhunter can use fuzzy matching to extract expected headings.
+
+**How it works:**
+
+Provide a list of `expected_headings` to `process_text()` or `process_batch_df()`. The matcher will:
+
+1. **Search**: Use fuzzy string matching ([RapidFuzz](https://github.com/maxbachmann/RapidFuzz)) to find heading text within content, even with spelling variations or case differences
+2. **Extract**: Identify the best matching substring and detect surrounding markers (`#`, `**`, `*`, `:`)
+3. **Split**: Break up content tokens at heading boundaries
+4. **Rebuild**: Reconstruct the document hierarchy with extracted headings in their proper positions
+
+**Parameters:**
+
+- `expected_headings`: List of heading strings to find (case-insensitive)
+- `match_threshold`: Minimum similarity score 0-100 (default: 80)
+  - 80-100: Strict matching, reduces false positives
+  - 60-79: Moderate matching, allows more variation
+  - Below 60: Lenient matching, may produce unexpected matches
