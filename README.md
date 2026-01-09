@@ -13,7 +13,7 @@ A parser for extracting headings and hierarchical structure from Markdown files.
 
 - Parse multiple heading formats (hash `#`, asterisk `**`, inline with colon, all-caps)
 - Build hierarchical structure from headings
-- **Fuzzy heading matching** to extract expected headings from improperly formatted documents, even with typos or spelling variations
+- Fuzzy heading matching to extract expected headings from improperly formatted documents, even with typos or spelling variations
 - Process single documents or batches from DataFrames
 - Export results to DataFrame, JSON, or tree visualizations
 - Configurable parsing rules and word limits
@@ -205,7 +205,7 @@ Different heading styles can be mixed in the same document. When switching from 
 
 When documents have inconsistent formatting, such as headings embedded inline within text, missing markdown markers, or improper line breaks, `headhunter` can use fuzzy matching to extract expected headings.
 
-**How it works:**
+**How fuzzy matching works:**
 
 Provide a list of `expected_headings` to `process_text()` or `process_batch_df()`. The matcher will:
 
@@ -227,10 +227,10 @@ Provide a list of `expected_headings` to `process_text()` or `process_batch_df()
 After parsing a document, `headhunter` can regenerate clean, standardized Markdown from the parsed structure. This is useful for:
 
 - **Cleaning up messy documents**: Convert inconsistent formatting into standard Markdown
-- **Standardizing format**: Ensure all documents use the same heading style
+- **Standardizing format**: Make certain all documents use the same heading style
 - **Post-processing extracted headings**: Apply fuzzy matching to extract headings, then export the cleaned result
 
-### How Regeneration Works
+**How regeneration works:**
 
 The `to_markdown()` method converts the parsed hierarchical structure back into Markdown:
 
