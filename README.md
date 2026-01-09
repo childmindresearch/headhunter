@@ -13,7 +13,7 @@ A parser for extracting headings and hierarchical structure from Markdown files.
 
 - Parse multiple heading formats (hash `#`, asterisk `**`, inline with colon, all-caps)
 - Build hierarchical structure from headings
-- **Fuzzy heading matching** to extract expected headings from improperly formatted documents
+- **Fuzzy heading matching** to extract expected headings from improperly formatted documents, even with typos or spelling variations
 - Process single documents or batches from DataFrames
 - Export results to DataFrame, JSON, or tree visualizations
 - Configurable parsing rules and word limits
@@ -47,6 +47,10 @@ parsed_result.to_json("output.json")
 
 # Print tree visualization
 print(parsed_result.to_tree())
+
+# Regenerate clean markdown from parsed structure
+regenerated_md = parsed_result.to_markdown()
+print(regenerated_md)
 
 # View results in a pandas DataFrame
 df_parsed = parsed_result.to_dataframe()
@@ -117,11 +121,11 @@ df_parsed.to_csv("parsed_data.csv")
 ```python
 import headhunter
 
-# Document where headings are embedded inline or lack proper formatting
+# Document where headings are embedded inline, lack proper formatting or have typos
 messy_doc = """
 This document has ## Heading 1 embedded in text without line breaks.
 Then we have **heading 2** in bold but inline.
-**Inline Heading:** with content on the same line.
+**Inline Haedign:** with content on the same line.
 """
 
 # Specify expected headings to extract via fuzzy matching
@@ -137,7 +141,7 @@ print(parsed.metadata)  # includes: matched_count, expected_count, match_percent
 
 ## How Hierarchy is Built
 
-Headhunter recognizes different heading styles in Markdown and builds a hierarchical structure by assigning levels to each heading. The following rules govern this process:
+`headhunter` recognizes different heading styles in Markdown and builds a hierarchical structure by assigning levels to each heading. The following rules govern this process:
 
 ### Basic Principles
 
@@ -199,7 +203,7 @@ Different heading styles can be mixed in the same document. When switching from 
 
 ## Fuzzy Heading Matching
 
-When documents have inconsistent formatting, such as headings embedded inline within text, missing markdown markers, or improper line breaks, headhunter can use fuzzy matching to extract expected headings.
+When documents have inconsistent formatting, such as headings embedded inline within text, missing markdown markers, or improper line breaks, `headhunter` can use fuzzy matching to extract expected headings.
 
 **How it works:**
 
@@ -217,3 +221,21 @@ Provide a list of `expected_headings` to `process_text()` or `process_batch_df()
   - 80-100: Strict matching, reduces false positives
   - 60-79: Moderate matching, allows more variation
   - Below 60: Lenient matching, may produce unexpected matches
+
+## Markdown Regeneration
+
+After parsing a document, `headhunter` can regenerate clean, standardized Markdown from the parsed structure. This is useful for:
+
+- **Cleaning up messy documents**: Convert inconsistent formatting into standard Markdown
+- **Standardizing format**: Ensure all documents use the same heading style
+- **Post-processing extracted headings**: Apply fuzzy matching to extract headings, then export the cleaned result
+
+### How Regeneration Works
+
+The `to_markdown()` method converts the parsed hierarchical structure back into Markdown:
+
+- **Standard headings**: Converted to hash format (`#`, `##`, `###`, etc.) based on hierarchical level
+- **Inline headings**: Preserved as bold format with colon (`**Heading:** content`)
+- **YAML front matter**: Metadata is included as YAML front matter at the top of the document
+- **Consistent spacing**: Single blank lines between sections for readability
+- **Case preservation**: Original text case is maintained (including ALL CAPS)

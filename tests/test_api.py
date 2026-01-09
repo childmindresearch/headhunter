@@ -134,3 +134,58 @@ def test_process_batch_df_with_matcher(
 
     assert type(parsed_batch) is ParsedBatch
     assert actual_output.equals(sample_dataframe_match_parsed)
+
+
+def test_to_markdown(
+    sample_match_markdown: str,
+    expected_markdown_match: str,
+) -> None:
+    """Test markdown regeneration from parsed structure with matcher."""
+    text = sample_match_markdown
+    metadata = {"source": "unit_test", "id": 123}
+
+    expected_headings = [
+        "INITIAL ALL CAPS HEADING",
+        "Heading 2",
+        "Heading 3",
+        "Inline Heading",
+        "ANOTHER HEADING WITHOUT MARKESR",
+    ]
+
+    parsed_text = process_text(
+        text,
+        metadata=metadata,
+        expected_headings=expected_headings,
+        match_threshold=80,
+    )
+    regenerated = parsed_text.to_markdown()
+
+    assert regenerated == expected_markdown_match
+
+
+def test_to_markdown_batch(
+    sample_dataframe: pd.DataFrame,
+    expected_markdown_files: dict[str, str],
+) -> None:
+    """Test markdown regeneration for batch processing."""
+    content_column = "content"
+    id_column = "doc_id"
+    metadata_columns = ["category", "priority"]
+    df = sample_dataframe
+
+    parsed_batch = process_batch_df(
+        df,
+        content_column=content_column,
+        id_column=id_column,
+        metadata_columns=metadata_columns,
+    )
+
+    markdown_dict = parsed_batch.to_markdown()
+
+    assert isinstance(markdown_dict, dict)
+    assert len(markdown_dict) == len(df)
+    assert set(markdown_dict.keys()) == set(df[id_column])
+
+    for doc_id, markdown in markdown_dict.items():
+        assert doc_id in expected_markdown_files
+        assert markdown == expected_markdown_files[doc_id]

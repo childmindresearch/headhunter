@@ -287,6 +287,20 @@ class ParsedText:
             self.hierarchy, show_line_numbers, show_type, self.metadata
         )
 
+    def to_markdown(self) -> str:
+        """Regenerates clean Markdown from the parsed structure.
+
+        Converts the hierarchical structure back into properly formatted Markdown,
+        using hash (#) syntax for standard headings and bold (**) format for inline
+        colon headings. Includes YAML front matter if metadata exists.
+
+        Returns:
+            Regenerated Markdown string.
+        """
+        from headhunter import regenerate
+
+        return regenerate.to_markdown(self.hierarchy, self.metadata)
+
     def to_dataframe(self) -> pd.DataFrame:
         """Converts the document to a pandas DataFrame.
 
@@ -450,6 +464,18 @@ class ParsedBatch:
         return output.batch_to_tree_files(
             self.documents, output_dir, show_line_numbers, show_type
         )
+
+    def to_markdown(self) -> dict[str, str]:
+        """Regenerates Markdown for all documents in the batch.
+
+        Returns:
+            Dictionary mapping document IDs to their regenerated Markdown strings.
+        """
+        result: dict[str, str] = {}
+        for doc in self.documents:
+            doc_id = str(doc.metadata["id"])
+            result[doc_id] = doc.to_markdown()
+        return result
 
     def to_dataframe(self) -> pd.DataFrame:
         """Combines all documents into a single pandas DataFrame.

@@ -7,43 +7,89 @@ import pathlib
 import pandas as pd
 import pytest
 
+# Sample data fixtures for tests
+
 
 @pytest.fixture
 def sample_mixed_markdown() -> str:
     """Sample markdown text with mixed heading styles for testing."""
-    return (pathlib.Path(__file__).parent / "fixtures" / "mixed.md").read_text()
-
-
-@pytest.fixture
-def sample_mixed_json() -> dict:
-    """Expected JSON output for mixed markdown fixture."""
-    with open(pathlib.Path(__file__).parent / "fixtures" / "mixed.json") as f:
-        return json.load(f)
-
-
-@pytest.fixture
-def sample_match_markdown() -> str:
-    """Sample markdown text for matcher testing."""
-    return (pathlib.Path(__file__).parent / "fixtures" / "match.md").read_text()
-
-
-@pytest.fixture
-def sample_match_json() -> dict:
-    """Expected JSON output for match markdown fixture."""
-    with open(pathlib.Path(__file__).parent / "fixtures" / "match.json") as f:
-        return json.load(f)
+    return (
+        pathlib.Path(__file__).parent / "fixtures" / "sample_data" / "mixed.md"
+    ).read_text()
 
 
 @pytest.fixture
 def sample_dataframe() -> pd.DataFrame:
     """Sample DataFrame with markdown content for batch processing tests."""
-    return pd.read_csv(pathlib.Path(__file__).parent / "fixtures" / "sample_data.csv")
+    return pd.read_csv(
+        pathlib.Path(__file__).parent / "fixtures" / "sample_data" / "sample_data.csv"
+    )
+
+
+@pytest.fixture
+def sample_match_markdown() -> str:
+    """Sample markdown text for matcher testing."""
+    return (
+        pathlib.Path(__file__).parent / "fixtures" / "sample_data" / "match.md"
+    ).read_text()
+
+
+@pytest.fixture
+def sample_dataframe_match() -> pd.DataFrame:
+    """Sample DataFrame with markdown content for batch processing with matcher."""
+    return pd.read_csv(
+        pathlib.Path(__file__).parent
+        / "fixtures"
+        / "sample_data"
+        / "sample_data_match.csv"
+    )
+
+
+# Expected output fixtures for tests
+## JSON outputs
+
+
+@pytest.fixture
+def sample_mixed_json() -> dict:
+    """Expected JSON output for mixed markdown fixture."""
+    with open(
+        pathlib.Path(__file__).parent / "fixtures" / "expected_json" / "mixed.json"
+    ) as f:
+        return json.load(f)
+
+
+@pytest.fixture
+def expected_json_files() -> dict[str, dict]:
+    """Expected JSON output files for batch processing tests."""
+    json_dir = pathlib.Path(__file__).parent / "fixtures" / "expected_json"
+    result = {}
+    for json_file in sorted(json_dir.glob("doc*.json")):
+        with open(json_file) as f:
+            result[json_file.name] = json.load(f)
+    return result
+
+
+@pytest.fixture
+def sample_match_json() -> dict:
+    """Expected JSON output for match markdown fixture."""
+    with open(
+        pathlib.Path(__file__).parent / "fixtures" / "expected_json" / "match.json"
+    ) as f:
+        return json.load(f)
+
+
+## CSV outputs
 
 
 @pytest.fixture
 def sample_dataframe_parsed() -> pd.DataFrame:
     """Expected parsed output for sample_dataframe."""
-    path = pathlib.Path(__file__).parent / "fixtures" / "sample_data_parsed.csv"
+    path = (
+        pathlib.Path(__file__).parent
+        / "fixtures"
+        / "expected_csv"
+        / "sample_data_parsed.csv"
+    )
     df = pd.read_csv(path)
 
     # Convert string representations of lists back to actual lists
@@ -54,17 +100,14 @@ def sample_dataframe_parsed() -> pd.DataFrame:
 
 
 @pytest.fixture
-def sample_dataframe_match() -> pd.DataFrame:
-    """Sample DataFrame with markdown content for batch processing with matcher."""
-    return pd.read_csv(
-        pathlib.Path(__file__).parent / "fixtures" / "sample_data_match.csv"
-    )
-
-
-@pytest.fixture
 def sample_dataframe_match_parsed() -> pd.DataFrame:
     """Expected parsed output for sample_dataframe_match with matcher."""
-    path = pathlib.Path(__file__).parent / "fixtures" / "sample_data_match_parsed.csv"
+    path = (
+        pathlib.Path(__file__).parent
+        / "fixtures"
+        / "expected_csv"
+        / "sample_data_match_parsed.csv"
+    )
     df = pd.read_csv(path)
 
     # Convert string representations of lists back to actual lists
@@ -76,15 +119,7 @@ def sample_dataframe_match_parsed() -> pd.DataFrame:
     return df
 
 
-@pytest.fixture
-def expected_json_files() -> dict[str, dict]:
-    """Expected JSON output files for batch processing tests."""
-    json_dir = pathlib.Path(__file__).parent / "fixtures" / "expected_json"
-    result = {}
-    for json_file in sorted(json_dir.glob("*.json")):
-        with open(json_file) as f:
-            result[json_file.name] = json.load(f)
-    return result
+## Tree outputs
 
 
 @pytest.fixture
@@ -92,6 +127,26 @@ def expected_tree_files() -> dict[str, str]:
     """Expected tree output files for batch processing tests."""
     tree_dir = pathlib.Path(__file__).parent / "fixtures" / "expected_tree"
     result = {}
-    for tree_file in sorted(tree_dir.glob("*.txt")):
+    for tree_file in sorted(tree_dir.glob("doc*.txt")):
         result[tree_file.name] = tree_file.read_text()
     return result
+
+
+## Markdown outputs
+
+
+@pytest.fixture
+def expected_markdown_files() -> dict[str, str]:
+    """Expected markdown output files for batch processing tests."""
+    md_dir = pathlib.Path(__file__).parent / "fixtures" / "expected_markdown"
+    result = {}
+    for md_file in sorted(md_dir.glob("doc*.md")):
+        result[md_file.stem] = md_file.read_text()
+    return result
+
+
+@pytest.fixture
+def expected_markdown_match() -> str:
+    """Expected markdown output for match.md fixture with matcher."""
+    path = pathlib.Path(__file__).parent / "fixtures" / "expected_markdown" / "match.md"
+    return path.read_text()
