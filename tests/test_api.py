@@ -4,6 +4,7 @@ import json
 import pathlib
 
 import pandas as pd
+import pytest
 
 from headhunter.api import process_batch_df, process_text
 from headhunter.models import ParsedBatch, ParsedText
@@ -33,6 +34,7 @@ def test_process_batch_df(
     expected_json_files: dict[str, dict],
     expected_tree_files: dict[str, str],
     tmp_path: pathlib.Path,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Test batch processing of DataFrame."""
     content_column = "content"
@@ -49,6 +51,7 @@ def test_process_batch_df(
         content_column=content_column,
         id_column=id_column,
         metadata_columns=metadata_columns,
+        config={"heading_max_words": 7, "random_param": 42},
     )
     actual_dataframe = parsed_batch.to_dataframe()
     json_files = parsed_batch.to_json(str(json_dir))
@@ -56,6 +59,10 @@ def test_process_batch_df(
 
     assert type(parsed_batch) is ParsedBatch
     assert actual_dataframe.equals(sample_dataframe_parsed)
+    assert (
+        "Unknown custom configuration parameter(s) will be ignored: 'random_param'. "
+        in caplog.text
+    )
 
     assert len(json_files) == len(expected_json_files)
     for json_file_path in json_files:

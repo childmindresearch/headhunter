@@ -26,8 +26,8 @@ class HierarchyBuilder:
     ) -> int:
         """Computes level for all-caps headings.
 
-        First all-caps heading sets the level contextually, all subsequent
-        all-caps headings use that same fixed level.
+        First all-caps heading sets the level contextually, all subsequent all-caps
+        headings use that same fixed level.
 
         Args:
             metadata: The metadata of the current heading.
@@ -111,9 +111,9 @@ class HierarchyBuilder:
     ) -> int:
         """Computes level for asterisk headings.
 
-        Uses custom ordering for binary comparison: bold (2) < bold+italic (3) <
-        italic (1). Level changes by +1 or -1 based on whether current heading is
-        deeper or shallower in the hierarchy compared to the previous asterisk heading.
+        Uses custom ordering for binary comparison: bold (2) < bold+italic (3) < italic
+        (1). Level changes by +1 or -1 based on whether current heading is deeper or
+        shallower in the hierarchy compared to the previous asterisk heading.
 
         The mapping establishes a hierarchy where:
         - 2 asterisks (bold) → order 1 (highest level in hierarchy)
@@ -169,10 +169,10 @@ class HierarchyBuilder:
     ) -> int:
         """Computes the hierarchical level for a heading token.
 
-        Delegates to specific computation methods based on heading type. The
-        computation follows a priority order: all-caps (regardless of marker),
-        hash headings, then asterisk headings. Inline asterisk headings with
-        colon format (e.g., **Label:**) are treated separately.
+        Delegates to specific computation methods based on heading type. The computation
+        follows a priority order: all-caps (regardless of marker), hash headings, then
+        asterisk headings. Inline asterisk headings with colon format (e.g., **Label:**)
+        are treated separately.
 
         Args:
             token: The heading token to compute level for.

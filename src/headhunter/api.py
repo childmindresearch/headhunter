@@ -21,11 +21,11 @@ def process_text(
 
     Args:
         text: The markdown text to parse.
-        config: Parser configuration. Can be a ParserConfig object or a dictionary
-            of configuration parameters. If None, uses default configuration.
+        config: Parser configuration. Can be a ParserConfig object or a dictionary of
+            configuration parameters. If None, uses default configuration.
         metadata: Optional metadata to attach to the parsed document.
-        expected_headings: Optional list of expected heading strings to match.
-            If provided, performs fuzzy matching and extraction.
+        expected_headings: Optional list of expected heading strings to match. If
+            provided, performs fuzzy matching and extraction.
         match_threshold: Minimum fuzzy match score (0-100) for heading matching.
             Defaults to 80. Only used if expected_headings is provided.
 
@@ -89,22 +89,21 @@ def process_batch_df(
 
     Args:
         df: Input DataFrame with markdown content.
-        content_column: Name of column containing markdown text.
-            Defaults to 'content'.
-        id_column: Name of column to use as document ID. If None,
-            generates hash from content. Defaults to None.
-        metadata_columns: List of additional column names to include
-            as document metadata. Defaults to None.
-        config: Parser configuration. Can be a ParserConfig object or a dictionary
-            of configuration parameters. If None, uses default configuration.
-        expected_headings: Optional list of expected heading strings to match
-            across all documents. If provided, performs fuzzy matching.
+        content_column: Name of column containing markdown text. Defaults to 'content'.
+        id_column: Name of column to use as document ID. If None, generates hash from
+            content. Defaults to None.
+        metadata_columns: List of additional column names to include as document
+            metadata. Defaults to None.
+        config: Parser configuration. Can be a ParserConfig object or a dictionary of
+            configuration parameters. If None, uses default configuration.
+        expected_headings: Optional list of expected heading strings to match across all
+            documents. If provided, performs fuzzy matching.
         match_threshold: Minimum fuzzy match score (0-100) for heading matching.
             Defaults to 80. Only used if expected_headings is provided.
 
     Returns:
-        ParsedBatch object containing successfully parsed documents
-        and any errors encountered. Use the object's methods to export:
+        ParsedBatch object containing successfully parsed documents and any errors
+        encountered. Use the object's methods to export:
         - batch.to_dataframe() for pandas DataFrame
         - batch.to_json(output_dir) for JSON files
         - batch.to_tree(output_dir) for tree visualizations

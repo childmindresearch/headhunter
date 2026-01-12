@@ -563,30 +563,27 @@ def match_headings(
 ) -> tuple[list[models.Token], dict[str, Any], list[str]]:
     """Matches expected headings against parsed tokens with fuzzy extraction.
 
-    This function processes the provided expected_headings sequentially, attempting
-    to align each expected heading to the document represented by `tokens`. It uses
-    a two-stage strategy for each expected heading:
+    This function processes the provided expected_headings sequentially, attempting to
+    align each expected heading to the document represented by `tokens`. It uses a
+    two-stage strategy for each expected heading:
 
     1. Exact match stage
        - Starting from the token immediately after the last successfully matched
-         heading, the function looks for an existing heading token whose textual
-         content matches the expected heading case-insensitively. If found, that
-         heading is considered matched (confidence = 100) and the matcher advances
-         past it.
+         heading, the function looks for an existing heading token whose textual content
+         matches the expected heading case-insensitively. If found, that heading is
+         considered matched (confidence = 100) and the matcher advances past it.
 
     2. Fuzzy extraction stage
        - If no exact heading token is found, the function determines a constrained
-         search window of content tokens in which to attempt fuzzy extraction.
-         This window is bounded by the next expected heading that already appears
-         in the remaining tokens (if any). This lookahead prevents extracting
-         content across boundaries that likely belong to subsequent expected
-         headings.
-       - Content tokens in the window are searched in-order with a fuzzy-first
-         approach (find_and_extract_heading) which uses partial_ratio and
-         substring extraction. When an extraction succeeds, the original content
-         token is split into pre-content, a new heading token, and post-content.
-         The function then updates the token list to keep processing from the newly
-         created heading token onward.
+         search window of content tokens in which to attempt fuzzy extraction. This
+         window is bounded by the next expected heading that already appears in the
+         remaining tokens (if any). This lookahead prevents extracting content across
+         boundaries that likely belong to subsequent expected headings.
+       - Content tokens in the window are searched in-order in a fuzzy manner
+         (find_and_extract_heading) using partial_ratio and substring extraction. When
+         an extraction succeeds, the original content token is split into pre-content, a
+         new heading token, and post-content. The function then updates the token list
+         to keep processing from the newly created heading token onward.
 
     Args:
         tokens: List of parsed tokens to search.

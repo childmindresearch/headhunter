@@ -10,8 +10,8 @@ class Tokenizer:
     """Tokenizes markdown text into structured tokens.
 
     This class processes markdown text line by line, identifying headings (hash,
-    asterisk, inline with colon, all-caps) and content blocks, creating Token
-    objects for each structural element.
+    asterisk, inline with colon, all-caps) and content blocks, creating Token objects
+    for each structural element.
 
     Attributes:
         config: The parser configuration containing regex patterns and settings.
@@ -80,8 +80,8 @@ class Tokenizer:
     ) -> list[models.Token] | None:
         """Attempts to parse a line as an inline heading with colon.
 
-        Inline headings have the format: **Label:** content or **Label**: content
-        They create two tokens: a heading token and a content token.
+        Inline headings have the format: **Label:** content or **Label**: content. Two
+        tokens are created: a heading token and a content token.
 
         Args:
             line: The line to parse.
@@ -181,8 +181,8 @@ class Tokenizer:
     ) -> models.Token | None:
         """Attempts to parse a line as an asterisk heading (standalone only).
 
-        Asterisk headings have the format: *Heading*, **Heading**, ***Heading***.
-        This method only matches standalone headings (not inline with colon).
+        Asterisk headings have the format: *Heading*, **Heading**, ***Heading***. This
+        method only matches standalone headings (not inline with colon).
 
         Args:
             line: The line to parse.
@@ -243,8 +243,8 @@ class Tokenizer:
             text: The markdown text to parse.
 
         Returns:
-            A tuple of (tokens, warnings) where tokens is a list of Token objects
-            and warnings is a list of warning messages.
+            A tuple of (tokens, warnings) where tokens is a list of Token objects and
+            warnings is a list of warning messages.
 
         Raises:
             ParsingError: If a fatal error occurs that prevents parsing.

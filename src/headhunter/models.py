@@ -297,9 +297,9 @@ class ParsedText:
         Returns:
             Regenerated Markdown string.
         """
-        from headhunter import regenerate
+        from headhunter import output
 
-        return regenerate.to_markdown(self.hierarchy, self.metadata)
+        return output.to_markdown(self.hierarchy, self.metadata)
 
     def to_dataframe(self) -> pd.DataFrame:
         """Converts the document to a pandas DataFrame.

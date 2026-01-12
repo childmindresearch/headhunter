@@ -15,7 +15,7 @@ A parser for extracting headings and hierarchical structure from Markdown files.
 - Build hierarchical structure from headings
 - Fuzzy heading matching to extract expected headings from improperly formatted documents, even with typos or spelling variations
 - Process single documents or batches from DataFrames
-- Export results to DataFrame, JSON, or tree visualizations
+- Export results to DataFrame, JSON, tree visualizations or regenerated clean Markdown
 - Configurable parsing rules and word limits
 
 ## Installation
