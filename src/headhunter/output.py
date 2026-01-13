@@ -470,7 +470,7 @@ def _order_dataframe_columns(
             else metadata_columns
         )
         for col in metadata_keys:
-            if col in df.columns:
+            if col != "id" and col in df.columns:
                 column_order.append(col)
     column_order.extend(
         ["start_line", "level", "length", "parents", "parent_types", "content"]
