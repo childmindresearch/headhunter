@@ -101,7 +101,7 @@ def _find_best_substring_match(
     expected_len = len(expected_heading)
     best_score = 0.0
     substring_threshold = max(threshold - 10, 60)
-    best_match: tuple[str, int, int] | None = None
+    best_match: tuple[str, int, int, float] | None = None
 
     if utils.detect_text_case(line_stripped) == "all_caps":
         full_line_score = fuzz.ratio(expected_lower, line_lower.strip())
@@ -111,10 +111,12 @@ def _find_best_substring_match(
                 actual_end = actual_start + len(line_stripped)
                 return line_stripped, actual_start, actual_end
 
-    # Try different window sizes around the expected length
-    for window_size in range(
-        max(expected_len - 5, 1), min(expected_len + 10, len(line) + 1)
-    ):
+    # Try different window sizes around the expected length with extended range
+    # to handle cases where actual text is significantly shorter or longer
+    min_window = max(expected_len - 20, 1)
+    max_window = min(expected_len + 30, len(line) + 1)
+
+    for window_size in range(min_window, max_window):
         for start in range(len(line) - window_size + 1):
             end = start + window_size
             substring = line[start:end]
@@ -124,15 +126,19 @@ def _find_best_substring_match(
 
             if score > best_score:
                 best_score = score
-                best_match = (substring.strip(), start, end)
+                substring_stripped = substring.strip()
+                strip_offset = len(substring) - len(substring.lstrip())
+                best_match = (
+                    substring_stripped,
+                    start + strip_offset,
+                    start + strip_offset + len(substring_stripped),
+                    score,
+                )
 
-    if best_match and best_score >= substring_threshold:
-        matched_text, _, _ = best_match
-        if matched_text:
-            actual_start = line.find(matched_text)
-            if actual_start != -1:
-                actual_end = actual_start + len(matched_text)
-                return matched_text, actual_start, actual_end
+    if best_match and best_match[3] >= substring_threshold:
+        matched_text, char_start, char_end, _ = best_match
+        if matched_text and char_start >= 0 and char_end <= len(line):
+            return matched_text, char_start, char_end
 
     return None
 
