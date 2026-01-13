@@ -190,13 +190,16 @@ class HierarchyBuilder:
             return self._compute_all_caps_level(metadata, state, heading_stack)
         elif metadata.is_hash:
             return self._compute_hash_level(metadata.marker_count, state, heading_stack)
-        else:  # metadata.is_asterisk
+        elif metadata.is_asterisk:
             if metadata.is_inline:
                 return self._compute_inline_level(heading_stack)
             else:
                 return self._compute_asterisk_level(
                     metadata.marker_count, state, heading_stack
                 )
+        else:
+            # Markerless headings behave like inline headings, they go one level deeper
+            return self._compute_inline_level(heading_stack)
 
     def _create_hierarchy_context(
         self,
