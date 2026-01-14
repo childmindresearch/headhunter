@@ -4,6 +4,7 @@ import json
 import pathlib
 
 import pandas as pd
+from tqdm.auto import tqdm
 
 from headhunter import config as _config
 from headhunter import models
@@ -313,7 +314,7 @@ def batch_to_json_files(
     logger.debug(f"Exporting {len(documents)} documents to JSON files in {output_dir}")
     created_files: list[str] = []
 
-    for doc in documents:
+    for doc in tqdm(documents, desc="Exporting JSON"):
         doc_id = str(doc.metadata["id"])
         filepath = output_path / f"{doc_id}.json"
         created_file = to_json_file(
@@ -349,7 +350,7 @@ def batch_to_tree_files(
     logger.debug(f"Exporting {len(documents)} documents to tree files in {output_dir}")
     created_files: list[str] = []
 
-    for doc in documents:
+    for doc in tqdm(documents, desc="Exporting trees"):
         doc_id = str(doc.metadata["id"])
         filepath = output_path / f"{doc_id}.txt"
 
@@ -531,7 +532,7 @@ def batch_to_dataframe(
 
     match_metadata_keys = {"match_percentage", "missing_headings", "matched_headings"}
 
-    for doc in documents:
+    for doc in tqdm(documents, desc="Building DataFrame"):
         doc_id = str(doc.metadata["id"])
 
         metadata_dict = {}

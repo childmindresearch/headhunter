@@ -3,6 +3,7 @@
 import traceback
 
 import pandas as pd
+from tqdm.auto import tqdm
 
 from headhunter import config as _config
 from headhunter import hierarchy, models, parser
@@ -141,7 +142,7 @@ def process_batch_df(
     documents: list[models.ParsedText] = []
     errors: list[dict[str, str | int | None]] = []
 
-    for idx, row in df.iterrows():
+    for idx, row in tqdm(df.iterrows(), total=len(df), desc="Parsing documents"):
         doc_metadata = {"row_index": idx}
         if id_column is not None:
             doc_metadata["id"] = row[id_column]

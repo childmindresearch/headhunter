@@ -4,6 +4,7 @@ import dataclasses
 import hashlib
 
 import pandas as pd
+from tqdm.auto import tqdm
 
 from headhunter import config as _config
 
@@ -530,7 +531,7 @@ class ParsedBatch:
         all_missing_headings: list[str] = []
         all_warnings: list[str] = []
 
-        for doc in self.documents:
+        for doc in tqdm(self.documents, desc="Matching headings"):
             updated_doc = doc.match_headings(expected_headings, threshold)
             updated_documents.append(updated_doc)
 

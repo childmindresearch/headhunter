@@ -11,7 +11,8 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "pandas>=2.3.3",
-  "rapidfuzz>=3.14.3"
+  "rapidfuzz>=3.14.3",
+  "tqdm>=4.67.1"
 ]
 
 [dependency-groups]
