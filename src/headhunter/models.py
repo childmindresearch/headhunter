@@ -256,7 +256,19 @@ class ParsedText:
             )
             self.warnings.append(warning_msg)
             logger.warning(warning_msg)
-            self.metadata["id"] = hashlib.sha256(self.text.encode("utf-8")).hexdigest()
+
+            # Since structured data has empty text field
+            # include content values and row_index to ensure unique IDs
+            if self.text:
+                hash_source = self.text
+            else:
+                row_index = self.metadata["row_index"]
+                content_values = [t.content for t in self.tokens if t.type == "content"]
+                hash_source = f"{row_index}:{'|'.join(content_values)}"
+
+            self.metadata["id"] = hashlib.sha256(
+                hash_source.encode("utf-8")
+            ).hexdigest()
 
     def __repr__(self) -> str:
         """Return a readable string representation."""
