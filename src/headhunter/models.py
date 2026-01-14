@@ -217,7 +217,7 @@ class ParsedText:
 
     def __post_init__(self) -> None:
         """Auto-generate ID from content hash if not provided or empty in metadata."""
-        existing_id = self.metadata["id"]
+        existing_id = self.metadata.get("id")
         id_is_empty = (
             existing_id is None
             or pd.isna(existing_id)
