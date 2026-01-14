@@ -108,29 +108,36 @@ def process_batch_df(
         - batch.to_dataframe() for pandas DataFrame
         - batch.to_json(output_dir) for JSON files
         - batch.to_tree(output_dir) for tree visualizations
+        - batch.to_markdown(output_dir) for markdown files
 
     Raises:
         ValueError: If required columns don't exist in DataFrame.
     """
     if content_column not in df.columns:
-        raise ValueError(
+        msg = (
             f"Column '{content_column}' not found in dataframe. "
             f"Available columns: {list(df.columns)}"
         )
+        logger.error(msg)
+        raise ValueError(msg)
 
     if id_column is not None and id_column not in df.columns:
-        raise ValueError(
+        msg = (
             f"Column '{id_column}' not found in dataframe. "
             f"Available columns: {list(df.columns)}"
         )
+        logger.error(msg)
+        raise ValueError(msg)
 
     if metadata_columns is not None:
         missing_columns = [col for col in metadata_columns if col not in df.columns]
         if missing_columns:
-            raise ValueError(
+            msg = (
                 f"Metadata columns {missing_columns} not found. "
                 f"Available columns: {list(df.columns)}"
             )
+            logger.error(msg)
+            raise ValueError(msg)
 
     if config is None:
         config = _config.ParserConfig()
@@ -206,6 +213,148 @@ def process_batch_df(
 
     logger.info(
         f"Batch processing complete: {len(documents)} successful, {len(errors)} errors"
+    )
+
+    return batch
+
+
+def process_structured_df(
+    df: pd.DataFrame,
+    id_column: str | None = None,
+    metadata_columns: list[str] | None = None,
+    content_columns: list[str] | None = None,
+) -> models.ParsedBatch:
+    """Processes a DataFrame with multiple content columns into ParsedBatch.
+
+    Converts "database dump" style CSVs where each column (other than ID and metadata)
+    represents a content field with the column header as its parent heading. Each row
+    becomes one ParsedText object with a flat hierarchy (level 1 for column headers,
+    level 2 for content).
+
+    Args:
+        df: Input DataFrame with multiple content columns.
+        id_column: Name of column to use as document ID. If None, generates hash from
+            row content. Defaults to None.
+        metadata_columns: List of column names to include as document metadata (e.g.,
+            'date', 'category'). Defaults to None.
+        content_columns: List of column names to treat as content fields. If None,
+            auto-detects as all columns except id_column and metadata_columns. Column
+            order is preserved. Defaults to None.
+
+    Returns:
+        ParsedBatch object containing one ParsedText per row. Use the object's methods
+        to export:
+        - batch.to_dataframe() for pandas DataFrame
+        - batch.to_json(output_dir) for JSON files
+        - batch.to_tree(output_dir) for tree visualizations
+        - batch.to_markdown(output_dir) for markdown files
+
+    Raises:
+        ValueError: If required columns don't exist in DataFrame.
+    """
+    if id_column is not None and id_column not in df.columns:
+        msg = (
+            f"Column '{id_column}' not found in dataframe. "
+            f"Available columns: {list(df.columns)}"
+        )
+        logger.error(msg)
+        raise ValueError(msg)
+
+    if metadata_columns is not None:
+        missing_columns = [col for col in metadata_columns if col not in df.columns]
+        if missing_columns:
+            msg = (
+                f"Metadata columns {missing_columns} not found. "
+                f"Available columns: {list(df.columns)}"
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+
+    if content_columns is None:
+        excluded_columns = set()
+        if id_column is not None:
+            excluded_columns.add(id_column)
+        if metadata_columns is not None:
+            excluded_columns.update(metadata_columns)
+        content_columns = [col for col in df.columns if col not in excluded_columns]
+    else:
+        missing_columns = [col for col in content_columns if col not in df.columns]
+        if missing_columns:
+            msg = (
+                f"Content columns {missing_columns} not found. "
+                f"Available columns: {list(df.columns)}"
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+
+    if not content_columns:
+        msg = (
+            "No content columns specified or detected. "
+            "At least one content column is required."
+        )
+        logger.error(msg)
+        raise ValueError(msg)
+
+    logger.info(
+        f"Starting structured processing of {len(df)} rows with "
+        f"{len(content_columns)} content columns"
+    )
+
+    documents: list[models.ParsedText] = []
+    errors: list[dict[str, str | int | None]] = []
+
+    for idx, row in tqdm(df.iterrows(), total=len(df), desc="Processing rows"):
+        doc_metadata: dict[str, object] = {"row_index": idx}
+
+        if id_column is not None:
+            doc_metadata["id"] = row[id_column]
+
+        if metadata_columns is not None:
+            for col in metadata_columns:
+                doc_metadata[col] = row[col]
+
+        try:
+            tokens = parser.structured_row_to_tokens(row, content_columns)
+
+            hierarchies, _ = hierarchy.build_structured_hierarchy(tokens)
+
+            parsed_text = models.ParsedText(
+                text="",  # No original markdown text
+                config=_config.ParserConfig(),  # Default config
+                metadata=doc_metadata,
+                tokens=tokens,
+                hierarchy=hierarchies,
+                warnings=[],
+            )
+            documents.append(parsed_text)
+
+        except Exception as e:
+            doc_id = doc_metadata["id"]
+            logger.error(
+                f"Error processing structured row {idx} (doc_id: {doc_id}): {str(e)}"
+            )
+            tb = traceback.format_exc()
+            error_dict = {
+                "doc_id": doc_id,
+                "row_index": idx,
+                "error_type": type(e).__name__,
+                "message": str(e),
+                "line_number": None,
+                "traceback": tb,
+            }
+            errors.append(error_dict)
+
+    batch = models.ParsedBatch(
+        documents=documents,
+        config=_config.ParserConfig(),
+        errors=errors,
+        warnings=[],
+        metadata_columns=metadata_columns,
+    )
+
+    logger.info(
+        "Structured processing complete: "
+        f"{len(documents)} successful, {len(errors)} errors"
     )
 
     return batch

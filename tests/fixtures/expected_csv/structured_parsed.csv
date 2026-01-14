@@ -1,0 +1,17 @@
+id,date,start_line,level,length,parents,parent_types,content
+patient_001,2025-01-10,1,2,10,['name'],['column'],John Smith
+patient_001,2025-01-10,2,2,2,['age'],['column'],45
+patient_001,2025-01-10,3,2,16,['diagnosis'],['column'],Anxiety Disorder
+patient_001,2025-01-10,4,2,41,['notes'],['column'],Patient reports increased stress at work.
+patient_002,2025-01-11,1,2,8,['name'],['column'],Jane Doe
+patient_002,2025-01-11,2,2,2,['age'],['column'],32
+patient_002,2025-01-11,3,2,10,['diagnosis'],['column'],Depression
+patient_002,2025-01-11,4,2,35,['notes'],['column'],Symptoms improving with medication.
+patient_001,2025-01-15,1,2,10,['name'],['column'],John Smith
+patient_001,2025-01-15,2,2,2,['age'],['column'],45
+patient_001,2025-01-15,3,2,16,['diagnosis'],['column'],Anxiety Disorder
+patient_001,2025-01-15,4,2,39,['notes'],['column'],Follow-up visit. Stress levels reduced.
+patient_003,2025-01-12,1,2,11,['name'],['column'],Bob Johnson
+patient_003,2025-01-12,2,2,2,['age'],['column'],28
+patient_003,2025-01-12,3,2,0,['diagnosis'],['column'],
+patient_003,2025-01-12,4,2,37,['notes'],['column'],First consultation. No diagnosis yet.

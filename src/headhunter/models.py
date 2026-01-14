@@ -33,16 +33,26 @@ class HeadingMetadata:
 
     def __post_init__(self) -> None:
         """Validate metadata consistency."""
-        if self.marker not in ("#", "*", None):
-            raise ValueError(f"Invalid marker: {self.marker}")
+        if self.marker not in ("#", "*", "column", None):
+            msg = f"Invalid marker: {self.marker}"
+            logger.error(msg)
+            raise ValueError(msg)
         if self.marker == "#" and (self.marker_count < 1 or self.marker_count > 6):
-            raise ValueError(f"Invalid marker_count for #: {self.marker_count}")
+            msg = f"Invalid marker_count for #: {self.marker_count}"
+            logger.error(msg)
+            raise ValueError(msg)
         if self.marker == "*" and (self.marker_count < 1 or self.marker_count > 3):
-            raise ValueError(f"Invalid marker_count for *: {self.marker_count}")
+            msg = f"Invalid marker_count for *: {self.marker_count}"
+            logger.error(msg)
+            raise ValueError(msg)
+        if self.marker == "column" and self.marker_count != 1:
+            msg = f"Invalid marker_count for column: {self.marker_count}"
+            logger.error(msg)
+            raise ValueError(msg)
         if self.marker is None and self.marker_count != 0:
-            raise ValueError(
-                f"Invalid marker_count for markerless: {self.marker_count}"
-            )
+            msg = f"Invalid marker_count for markerless: {self.marker_count}"
+            logger.error(msg)
+            raise ValueError(msg)
         if self.case not in (
             "all_caps",
             "all_lowercase",
@@ -50,13 +60,21 @@ class HeadingMetadata:
             "sentence_case",
             "unknown",
         ):
-            raise ValueError(f"Invalid case: {self.case}")
-        if self.is_inline and self.marker != "*":
-            raise ValueError("Only asterisk headings can be inline")
+            msg = f"Invalid case: {self.case}"
+            logger.error(msg)
+            raise ValueError(msg)
+        if self.is_inline and self.marker not in ("*", "column"):
+            msg = "Only asterisk or column headings can be inline"
+            logger.error(msg)
+            raise ValueError(msg)
         if self.is_extracted and self.extraction_position is None:
-            raise ValueError("extraction_position required when is_extracted=True")
+            msg = "extraction_position required when is_extracted=True"
+            logger.error(msg)
+            raise ValueError(msg)
         if self.extraction_position not in ("inline", "standalone", None):
-            raise ValueError(f"Invalid extraction_position: {self.extraction_position}")
+            msg = f"Invalid extraction_position: {self.extraction_position}"
+            logger.error(msg)
+            raise ValueError(msg)
 
     @property
     def signature(self) -> str:
@@ -75,12 +93,14 @@ class HeadingMetadata:
         """
         if self.marker is None:
             sig = "markerless"
+        elif self.marker == "column":
+            sig = "column"
         else:
             sig = f"{self.marker}{self.marker_count}"
 
         if self.case == "all_caps":
             sig += "-CAPS"
-        if self.is_inline:
+        if self.is_inline and self.marker != "column":
             sig += "-inline"
 
         if self.is_extracted:
@@ -139,11 +159,17 @@ class Token:
     def __post_init__(self) -> None:
         """Validate token consistency."""
         if self.type not in ("heading", "content"):
-            raise ValueError(f"Invalid token type: {self.type}")
+            msg = f"Invalid token type: {self.type}"
+            logger.error(msg)
+            raise ValueError(msg)
         if self.type == "heading" and self.metadata is None:
-            raise ValueError("Heading tokens must have metadata")
+            msg = "Heading tokens must have metadata"
+            logger.error(msg)
+            raise ValueError(msg)
         if self.type == "content" and self.metadata is not None:
-            raise ValueError("Content tokens must not have metadata")
+            msg = "Content tokens must not have metadata"
+            logger.error(msg)
+            raise ValueError(msg)
 
 
 @dataclasses.dataclass

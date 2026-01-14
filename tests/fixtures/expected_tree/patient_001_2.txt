@@ -1,0 +1,12 @@
+Metadata
+--------------------------------------------------------------------------------
+row_index: 2
+id: patient_001
+date: 2025-01-15
+
+Document Structure
+================================================================================
+name [column] (line 1)
+age [column] (line 2)
+diagnosis [column] (line 3)
+notes [column] (line 4)

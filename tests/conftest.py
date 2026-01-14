@@ -45,6 +45,14 @@ def sample_dataframe_match() -> pd.DataFrame:
     )
 
 
+@pytest.fixture
+def sample_structured_dataframe() -> pd.DataFrame:
+    """Sample DataFrame with multiple content columns for structured processing."""
+    return pd.read_csv(
+        pathlib.Path(__file__).parent / "fixtures" / "sample_data" / "structured.csv"
+    )
+
+
 # Expected output fixtures for tests
 ## JSON outputs
 
@@ -76,6 +84,17 @@ def sample_match_json() -> dict:
         pathlib.Path(__file__).parent / "fixtures" / "expected_json" / "match.json"
     ) as f:
         return json.load(f)
+
+
+@pytest.fixture
+def expected_structured_json_files() -> dict[str, dict]:
+    """Expected JSON output files for structured data processing tests."""
+    json_dir = pathlib.Path(__file__).parent / "fixtures" / "expected_json"
+    result = {}
+    for json_file in sorted(json_dir.glob("patient_*.json")):
+        with open(json_file) as f:
+            result[json_file.name] = json.load(f)
+    return result
 
 
 ## CSV outputs
@@ -119,6 +138,27 @@ def sample_dataframe_match_parsed() -> pd.DataFrame:
     return df
 
 
+@pytest.fixture
+def sample_structured_parsed() -> pd.DataFrame:
+    """Expected parsed output for sample_structured_dataframe."""
+    path = (
+        pathlib.Path(__file__).parent
+        / "fixtures"
+        / "expected_csv"
+        / "structured_parsed.csv"
+    )
+    df = pd.read_csv(path)
+
+    # Convert string representations of lists back to actual lists
+    df["parents"] = df["parents"].apply(ast.literal_eval)
+    df["parent_types"] = df["parent_types"].apply(ast.literal_eval)
+
+    # Fill NaN content values with empty strings
+    df["content"] = df["content"].fillna("")
+
+    return df
+
+
 ## Tree outputs
 
 
@@ -128,6 +168,16 @@ def expected_tree_files() -> dict[str, str]:
     tree_dir = pathlib.Path(__file__).parent / "fixtures" / "expected_tree"
     result = {}
     for tree_file in sorted(tree_dir.glob("doc*.txt")):
+        result[tree_file.name] = tree_file.read_text()
+    return result
+
+
+@pytest.fixture
+def expected_structured_tree_files() -> dict[str, str]:
+    """Expected tree output files for structured data processing tests."""
+    tree_dir = pathlib.Path(__file__).parent / "fixtures" / "expected_tree"
+    result = {}
+    for tree_file in sorted(tree_dir.glob("patient_*.txt")):
         result[tree_file.name] = tree_file.read_text()
     return result
 
@@ -150,3 +200,13 @@ def expected_markdown_match() -> str:
     """Expected markdown output for match.md fixture with matcher."""
     path = pathlib.Path(__file__).parent / "fixtures" / "expected_markdown" / "match.md"
     return path.read_text()
+
+
+@pytest.fixture
+def expected_structured_markdown_files() -> dict[str, str]:
+    """Expected markdown output files for structured data processing tests."""
+    md_dir = pathlib.Path(__file__).parent / "fixtures" / "expected_markdown"
+    result = {}
+    for md_file in sorted(md_dir.glob("patient_*.md")):
+        result[md_file.stem] = md_file.read_text()
+    return result

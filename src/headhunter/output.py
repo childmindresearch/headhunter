@@ -29,9 +29,9 @@ def _pop_stack_to_parent_level(
         ValueError: If stack is empty.
     """
     if not stack:
-        error_msg = "Stack is empty when attempting to pop to parent level."
-        logger.error(error_msg)
-        raise ValueError(error_msg)
+        msg = "Stack is empty when attempting to pop to parent level."
+        logger.error(msg)
+        raise ValueError(msg)
 
     while len(stack) > 1 and stack[-1][0] >= current_level:
         stack.pop()
@@ -318,6 +318,46 @@ def _ensure_output_directory(output_dir: str | pathlib.Path) -> pathlib.Path:
     return output_path
 
 
+def _build_unique_filenames(
+    documents: list[models.ParsedText],
+) -> list[str]:
+    """Builds unique filenames for documents, handling ID collisions.
+
+    When multiple documents have the same ID, appends row_index to the filename to
+    make sure filenames are unique. Logs a warning when collisions are detected.
+
+    Args:
+        documents: List of ParsedText objects.
+
+    Returns:
+        List of unique filename stems (without extension), one per document.
+    """
+    id_counts: dict[str, int] = {}
+    for doc in documents:
+        doc_id = str(doc.metadata["id"])
+        id_counts[doc_id] = id_counts.get(doc_id, 0) + 1
+
+    has_collisions = any(count > 1 for count in id_counts.values())
+    if has_collisions:
+        colliding_ids = [id_ for id_, count in id_counts.items() if count > 1]
+        logger.warning(
+            f"Duplicate document IDs detected: {colliding_ids}. "
+            "Using {id}_{row_index} format for filenames to ensure uniqueness."
+        )
+
+    filenames: list[str] = []
+    for doc in documents:
+        doc_id = str(doc.metadata["id"])
+        if id_counts[doc_id] > 1:
+            # Use id_row_index format for colliding IDs
+            row_index = doc.metadata.get("row_index", 0)
+            filenames.append(f"{doc_id}_{row_index}")
+        else:
+            filenames.append(doc_id)
+
+    return filenames
+
+
 def batch_to_json_files(
     documents: list[models.ParsedText],
     output_dir: str | pathlib.Path,
@@ -334,13 +374,15 @@ def batch_to_json_files(
         List of created file paths.
     """
     output_path = _ensure_output_directory(output_dir)
+    filenames = _build_unique_filenames(documents)
 
     logger.debug(f"Exporting {len(documents)} documents to JSON files in {output_dir}")
     created_files: list[str] = []
 
-    for doc in tqdm(documents, desc="Exporting JSON"):
-        doc_id = str(doc.metadata["id"])
-        filepath = output_path / f"{doc_id}.json"
+    for doc, filename in tqdm(
+        zip(documents, filenames), total=len(documents), desc="Exporting JSON"
+    ):
+        filepath = output_path / f"{filename}.json"
         created_file = to_json_file(
             doc.hierarchy,
             filepath,
@@ -370,13 +412,15 @@ def batch_to_tree_files(
         List of created file paths.
     """
     output_path = _ensure_output_directory(output_dir)
+    filenames = _build_unique_filenames(documents)
 
     logger.debug(f"Exporting {len(documents)} documents to tree files in {output_dir}")
     created_files: list[str] = []
 
-    for doc in tqdm(documents, desc="Exporting trees"):
-        doc_id = str(doc.metadata["id"])
-        filepath = output_path / f"{doc_id}.txt"
+    for doc, filename in tqdm(
+        zip(documents, filenames), total=len(documents), desc="Exporting trees"
+    ):
+        filepath = output_path / f"{filename}.txt"
 
         tree_str = to_tree_string(
             doc.hierarchy,
@@ -407,15 +451,17 @@ def batch_to_markdown_files(
         List of created file paths.
     """
     output_path = _ensure_output_directory(output_dir)
+    filenames = _build_unique_filenames(documents)
 
     logger.debug(
         f"Exporting {len(documents)} documents to Markdown files in {output_dir}"
     )
     created_files: list[str] = []
 
-    for doc in tqdm(documents, desc="Exporting Markdown"):
-        doc_id = str(doc.metadata["id"])
-        filepath = output_path / f"{doc_id}.md"
+    for doc, filename in tqdm(
+        zip(documents, filenames), total=len(documents), desc="Exporting Markdown"
+    ):
+        filepath = output_path / f"{filename}.md"
         created_file = write_markdown(
             doc.hierarchy,
             filepath,
@@ -447,14 +493,14 @@ def _to_dataframe_rows(
         ValueError: If hierarchy is None or doc_id is empty.
     """
     if hierarchy is None:
-        error_msg = "hierarchy parameter cannot be None"
-        logger.error(error_msg)
-        raise ValueError(error_msg)
+        msg = "hierarchy parameter cannot be None"
+        logger.error(msg)
+        raise ValueError(msg)
 
     if not doc_id or not doc_id.strip():
-        error_msg = "doc_id parameter cannot be empty"
-        logger.error(error_msg)
-        raise ValueError(error_msg)
+        msg = "doc_id parameter cannot be empty"
+        logger.error(msg)
+        raise ValueError(msg)
 
     rows: list[dict[str, object]] = []
 

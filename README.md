@@ -15,6 +15,7 @@ A parser for extracting headings and hierarchical structure from Markdown files.
 - Build hierarchical structure from headings
 - Fuzzy heading matching to extract expected headings from improperly formatted documents, even with typos or spelling variations
 - Process single documents or batches from DataFrames
+- Convert structured tabular data (e.g., CSV exports) into hierarchical report format
 - Export results to DataFrame, JSON, tree visualizations or regenerated clean Markdown
 - Configurable parsing rules and word limits
 
@@ -139,6 +140,36 @@ parsed = headhunter.process_text(
 print(parsed.metadata)  # includes: matched_count, expected_count, match_percentage
 ```
 
+**Process structured data (CSV exports):**
+
+```python
+import pandas as pd
+import headhunter
+
+# DataFrame with multiple content columns (not markdown)
+df = pd.DataFrame(
+    {
+        "patient_id": ["P001", "P002"],
+        "date": ["2025-01-10", "2025-01-11"],
+        "name": ["John Smith", "Jane Doe"],
+        "diagnosis": ["Anxiety Disorder", "Depression"],
+        "notes": ["Initial consultation.", "Follow-up visit."],
+    }
+)
+
+# Convert to parsed structure (column headers become headings)
+parsed_batch = headhunter.process_structured_df(
+    df,
+    id_column="patient_id",
+    metadata_columns=["date"],
+    # rest of the columns auto-detected as content_columns if not specified
+)
+
+# All output formats work the same as markdown parsing
+parsed_batch.to_markdown("reports/")  # Creates report-style markdown files with column headers as inline colon headings and cell values as content
+parsed_batch.to_dataframe()  # Long-form DataFrame in the same format as markdown parsing
+```
+
 ## How Hierarchy is Built
 
 `headhunter` recognizes different heading styles in Markdown and builds a hierarchical structure by assigning levels to each heading. The following rules govern this process:
@@ -239,3 +270,22 @@ The `to_markdown()` method converts the parsed hierarchical structure back into 
 - **YAML front matter**: Metadata is included as YAML front matter at the top of the document
 - **Consistent spacing**: Single blank lines between sections for readability
 - **Case preservation**: Original text case is maintained (including ALL CAPS)
+
+## Structured Data Processing
+
+In addition to parsing markdown documents, `headhunter` can convert CSVs with multiple content columns into the same parsed structure. This enables use of all the same downstream analysis logic and output formats for tabular data.
+
+**Use cases:**
+
+- Convert flat database exports into long-form dataframe formats
+- Generate markdown reports from structured data
+- Apply consistent analysis pipelines to both markdown and tabular data sources
+
+**How it works:**
+
+`process_structured_df()` treats each row as a separate document and each content column as a section:
+
+- **Column headers** become level-1 headings
+- **Cell values** become level-2 content under their respective column heading
+- **Empty cells (NaN)** are converted to empty strings
+- **Column order** is preserved in the output

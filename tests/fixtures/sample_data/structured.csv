@@ -1,0 +1,5 @@
+doc_id,date,name,age,diagnosis,notes
+patient_001,2025-01-10,John Smith,45,Anxiety Disorder,Patient reports increased stress at work.
+patient_002,2025-01-11,Jane Doe,32,Depression,"Symptoms improving with medication."
+patient_001,2025-01-15,John Smith,45,Anxiety Disorder,Follow-up visit. Stress levels reduced.
+patient_003,2025-01-12,Bob Johnson,28,,First consultation. No diagnosis yet.

@@ -1,5 +1,7 @@
 """Tokenization module for parsing markdown text into structured tokens."""
 
+import pandas as pd
+
 from headhunter import config as _config
 from headhunter import models, utils
 
@@ -334,3 +336,58 @@ class Tokenizer:
             logger.debug(f"Tokenization completed with {len(warnings)} warning(s)")
 
         return tokens, warnings
+
+
+def structured_row_to_tokens(
+    row: pd.Series,
+    content_columns: list[str],
+) -> list[models.Token]:
+    """Converts a DataFrame row with multiple content columns into Token pairs.
+
+    For each content column, creates a heading token (column name) followed by a content
+    token (cell value). NaN values are converted to empty strings. Column order is
+    preserved.
+
+    Args:
+        row: A pandas Series representing a single row from the DataFrame.
+        content_columns: List of column names to treat as content fields.
+
+    Returns:
+        List of Token objects alternating between headings and content.
+    """
+    tokens: list[models.Token] = []
+
+    for col_index, column_name in enumerate(content_columns, start=1):
+        cell_value = row[column_name]
+
+        if pd.isna(cell_value):
+            content_value = ""
+        else:
+            content_value = str(cell_value)
+
+        heading_metadata = models.HeadingMetadata(
+            marker="column",
+            marker_count=1,
+            case=utils.detect_text_case(column_name),
+            is_inline=True,
+            is_extracted=False,
+            extraction_position=None,
+        )
+
+        heading_token = models.Token(
+            type="heading",
+            content=column_name,
+            line_number=col_index,
+            metadata=heading_metadata,
+        )
+
+        content_token = models.Token(
+            type="content",
+            content=content_value,
+            line_number=col_index,
+            metadata=None,
+        )
+
+        tokens.extend([heading_token, content_token])
+
+    return tokens

@@ -32,6 +32,7 @@ repos:
   - id: check-case-conflict
   - id: end-of-file-fixer
   - id: trailing-whitespace
+    exclude: tests/fixtures/expected_markdown/patient_003\.md
   - id: pretty-format-json
     args:
     - --autofix

@@ -184,7 +184,9 @@ class HierarchyBuilder:
         """
         metadata = token.metadata
         if metadata is None:
-            raise ValueError(f"Heading token missing metadata: {token}")
+            msg = f"Heading token missing metadata: {token}"
+            logger.error(msg)
+            raise ValueError(msg)
 
         if metadata.is_all_caps:
             return self._compute_all_caps_level(metadata, state, heading_stack)
@@ -331,7 +333,7 @@ class HierarchyBuilder:
                 if metadata is not None and not metadata.is_inline:
                     state.last_heading_level = level
 
-            elif token.type == "content":
+            else:  # token.type == "content"
                 # Calculate level: Use the level of the last heading on stack + 1
                 # (The stack includes inline headings, while last_heading_level doesn't)
                 level = heading_stack[-1][0] + 1 if heading_stack else 1
@@ -350,3 +352,60 @@ class HierarchyBuilder:
             )
 
         return context_list, warnings
+
+
+def build_structured_hierarchy(
+    tokens: list[models.Token],
+) -> tuple[list[models.HierarchyContext], list[str]]:
+    """Builds flat hierarchical structure from structured (multi-column CSV) tokens.
+
+    For structured data, the hierarchy is flat:
+    - Headings (column names) are level 1
+    - Content (cell values) are level 2, with the column name as parent
+
+    Args:
+        tokens: List of tokens from structured_row_to_tokens (alternating
+            heading/content pairs).
+
+    Returns:
+        A tuple of (hierarchy_contexts, warnings) where hierarchy_contexts is a list of
+        HierarchyContext objects and warnings is a list of warning messages.
+    """
+    warnings: list[str] = []
+
+    if not tokens:
+        warning_msg = "No tokens provided for structured hierarchy building"
+        logger.debug(warning_msg)
+        warnings.append(warning_msg)
+        return [], warnings
+
+    context_list: list[models.HierarchyContext] = []
+    current_heading: models.Token | None = None
+
+    for token in tokens:
+        if token.type == "heading":
+            context = models.HierarchyContext(
+                token=token,
+                level=1,
+                parents=[],
+                parent_types=[],
+            )
+            context_list.append(context)
+            current_heading = token
+        else:  # token.type == "content"
+            if current_heading is not None:
+                parents = [current_heading.content]
+                parent_types = ["column"]
+            else:
+                parents = []
+                parent_types = []
+
+            context = models.HierarchyContext(
+                token=token,
+                level=2,
+                parents=parents,
+                parent_types=parent_types,
+            )
+            context_list.append(context)
+
+    return context_list, warnings

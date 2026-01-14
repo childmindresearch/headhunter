@@ -1,0 +1,99 @@
+{
+    "row_index": 3,
+    "id": "patient_003",
+    "date": "2025-01-12",
+    "sections": [
+        {
+            "type": "heading",
+            "text": "name",
+            "level": 1,
+            "line_number": 1,
+            "metadata": {
+                "marker": "column",
+                "marker_count": 1,
+                "case": "all_lowercase",
+                "is_inline": true,
+                "is_extracted": false,
+                "extraction_position": null,
+                "signature": "column"
+            },
+            "sections": [
+                {
+                    "type": "content",
+                    "text": "Bob Johnson",
+                    "level": 2,
+                    "line_number": 1
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "text": "age",
+            "level": 1,
+            "line_number": 2,
+            "metadata": {
+                "marker": "column",
+                "marker_count": 1,
+                "case": "all_lowercase",
+                "is_inline": true,
+                "is_extracted": false,
+                "extraction_position": null,
+                "signature": "column"
+            },
+            "sections": [
+                {
+                    "type": "content",
+                    "text": "28",
+                    "level": 2,
+                    "line_number": 2
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "text": "diagnosis",
+            "level": 1,
+            "line_number": 3,
+            "metadata": {
+                "marker": "column",
+                "marker_count": 1,
+                "case": "all_lowercase",
+                "is_inline": true,
+                "is_extracted": false,
+                "extraction_position": null,
+                "signature": "column"
+            },
+            "sections": [
+                {
+                    "type": "content",
+                    "text": "",
+                    "level": 2,
+                    "line_number": 3
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "text": "notes",
+            "level": 1,
+            "line_number": 4,
+            "metadata": {
+                "marker": "column",
+                "marker_count": 1,
+                "case": "all_lowercase",
+                "is_inline": true,
+                "is_extracted": false,
+                "extraction_position": null,
+                "signature": "column"
+            },
+            "sections": [
+                {
+                    "type": "content",
+                    "text": "First consultation. No diagnosis yet.",
+                    "level": 2,
+                    "line_number": 4
+                }
+            ]
+        }
+    ]
+}

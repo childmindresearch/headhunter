@@ -1,0 +1,99 @@
+{
+    "row_index": 0,
+    "id": "patient_001",
+    "date": "2025-01-10",
+    "sections": [
+        {
+            "type": "heading",
+            "text": "name",
+            "level": 1,
+            "line_number": 1,
+            "metadata": {
+                "marker": "column",
+                "marker_count": 1,
+                "case": "all_lowercase",
+                "is_inline": true,
+                "is_extracted": false,
+                "extraction_position": null,
+                "signature": "column"
+            },
+            "sections": [
+                {
+                    "type": "content",
+                    "text": "John Smith",
+                    "level": 2,
+                    "line_number": 1
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "text": "age",
+            "level": 1,
+            "line_number": 2,
+            "metadata": {
+                "marker": "column",
+                "marker_count": 1,
+                "case": "all_lowercase",
+                "is_inline": true,
+                "is_extracted": false,
+                "extraction_position": null,
+                "signature": "column"
+            },
+            "sections": [
+                {
+                    "type": "content",
+                    "text": "45",
+                    "level": 2,
+                    "line_number": 2
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "text": "diagnosis",
+            "level": 1,
+            "line_number": 3,
+            "metadata": {
+                "marker": "column",
+                "marker_count": 1,
+                "case": "all_lowercase",
+                "is_inline": true,
+                "is_extracted": false,
+                "extraction_position": null,
+                "signature": "column"
+            },
+            "sections": [
+                {
+                    "type": "content",
+                    "text": "Anxiety Disorder",
+                    "level": 2,
+                    "line_number": 3
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "text": "notes",
+            "level": 1,
+            "line_number": 4,
+            "metadata": {
+                "marker": "column",
+                "marker_count": 1,
+                "case": "all_lowercase",
+                "is_inline": true,
+                "is_extracted": false,
+                "extraction_position": null,
+                "signature": "column"
+            },
+            "sections": [
+                {
+                    "type": "content",
+                    "text": "Patient reports increased stress at work.",
+                    "level": 2,
+                    "line_number": 4
+                }
+            ]
+        }
+    ]
+}
