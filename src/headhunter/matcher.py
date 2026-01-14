@@ -76,69 +76,48 @@ def _find_best_substring_match(
 ) -> tuple[str, int, int] | None:
     """Finds the best matching substring in a line for the expected heading.
 
-    Uses a sliding window approach to find the substring that best matches the expected
-    heading text. For all-caps standalone lines, prefers the full line to avoid
-    incorrect inline detection.
-
-    The substring extraction uses fuzz.ratio (full string comparison) which is typically
-    stricter than the partial_ratio used for line screening. To maintain consistency,
-    the effective threshold is reduced by 10 points with a minimum floor of 60 to
-    prevent overly permissive matches.
+    Uses rapidfuzz's partial_ratio_alignment to find the substring that best matches
+    the expected heading text. For all-caps standalone lines, prefers the full line
+    to avoid incorrect inline detection.
 
     Args:
         line: Line of text to search.
         expected_heading: Expected heading text (original case).
         expected_lower: Expected heading text (lowercase).
-        threshold: Minimum fuzzy match score from partial_ratio screening. The actual
-            threshold used is max(threshold - 10, 60) to account for ratio being
-            stricter than partial_ratio.
+        threshold: Minimum fuzzy match score to accept.
 
     Returns:
         Tuple of (matched_substring, char_start, char_end) if found, None otherwise.
     """
     line_lower = line.lower()
     line_stripped = line.strip()
-    expected_len = len(expected_heading)
-    best_score = 0.0
-    substring_threshold = max(threshold - 10, 60)
-    best_match: tuple[str, int, int, float] | None = None
 
     if utils.detect_text_case(line_stripped) == "all_caps":
         full_line_score = fuzz.ratio(expected_lower, line_lower.strip())
-        if full_line_score >= substring_threshold:
+        if full_line_score >= threshold:
             actual_start = line.find(line_stripped)
             if actual_start != -1:
                 actual_end = actual_start + len(line_stripped)
                 return line_stripped, actual_start, actual_end
 
-    # Try different window sizes around the expected length with extended range
-    # to handle cases where actual text is significantly shorter or longer
-    min_window = max(expected_len - 20, 1)
-    max_window = min(expected_len + 30, len(line) + 1)
+    alignment = fuzz.partial_ratio_alignment(expected_lower, line_lower)
 
-    for window_size in range(min_window, max_window):
-        for start in range(len(line) - window_size + 1):
-            end = start + window_size
-            substring = line[start:end]
-            substring_lower = line_lower[start:end]
+    if alignment is None or alignment.score < threshold:
+        return None
 
-            score = fuzz.ratio(expected_lower, substring_lower)
+    raw_match = line[alignment.dest_start : alignment.dest_end]
+    matched_text = raw_match.strip()
 
-            if score > best_score:
-                best_score = score
-                substring_stripped = substring.strip()
-                strip_offset = len(substring) - len(substring.lstrip())
-                best_match = (
-                    substring_stripped,
-                    start + strip_offset,
-                    start + strip_offset + len(substring_stripped),
-                    score,
-                )
+    if not matched_text:
+        return None
 
-    if best_match and best_match[3] >= substring_threshold:
-        matched_text, char_start, char_end, _ = best_match
-        if matched_text and char_start >= 0 and char_end <= len(line):
-            return matched_text, char_start, char_end
+    # Calculate adjusted positions accounting for leading whitespace stripped
+    strip_offset = len(raw_match) - len(raw_match.lstrip())
+    char_start = alignment.dest_start + strip_offset
+    char_end = char_start + len(matched_text)
+
+    if char_start >= 0 and char_end <= len(line):
+        return matched_text, char_start, char_end
 
     return None
 
