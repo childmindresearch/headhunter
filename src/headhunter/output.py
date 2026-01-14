@@ -280,6 +280,30 @@ def to_markdown(
     return "\n".join(lines).rstrip() + "\n"
 
 
+def write_markdown(
+    hierarchy: list[models.HierarchyContext],
+    filepath: str | pathlib.Path,
+    metadata: dict[str, object] | None = None,
+) -> str:
+    """Exports hierarchy to a Markdown file.
+
+    Args:
+        hierarchy: List of HierarchyContext objects.
+        filepath: Path to output Markdown file.
+        metadata: Optional metadata to include as YAML front matter.
+
+    Returns:
+        Path to the created file as a string.
+    """
+    markdown_content = to_markdown(hierarchy, metadata)
+
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(markdown_content)
+
+    logger.debug(f"Exported Markdown to {filepath}")
+    return str(filepath)
+
+
 def _ensure_output_directory(output_dir: str | pathlib.Path) -> pathlib.Path:
     """Creates output directory if it doesn't exist.
 
@@ -365,6 +389,39 @@ def batch_to_tree_files(
             f.write(tree_str)
 
         created_files.append(str(filepath))
+
+    return created_files
+
+
+def batch_to_markdown_files(
+    documents: list[models.ParsedText],
+    output_dir: str | pathlib.Path,
+) -> list[str]:
+    """Exports each document to individual Markdown file.
+
+    Args:
+        documents: List of ParsedText objects.
+        output_dir: Directory where Markdown files will be saved.
+
+    Returns:
+        List of created file paths.
+    """
+    output_path = _ensure_output_directory(output_dir)
+
+    logger.debug(
+        f"Exporting {len(documents)} documents to Markdown files in {output_dir}"
+    )
+    created_files: list[str] = []
+
+    for doc in tqdm(documents, desc="Exporting Markdown"):
+        doc_id = str(doc.metadata["id"])
+        filepath = output_path / f"{doc_id}.md"
+        created_file = write_markdown(
+            doc.hierarchy,
+            filepath,
+            metadata=doc.metadata,
+        )
+        created_files.append(str(created_file))
 
     return created_files
 

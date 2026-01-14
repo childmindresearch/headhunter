@@ -173,26 +173,29 @@ def test_to_markdown(
 def test_to_markdown_batch(
     sample_dataframe: pd.DataFrame,
     expected_markdown_files: dict[str, str],
+    tmp_path: pathlib.Path,
 ) -> None:
     """Test markdown regeneration for batch processing."""
     content_column = "content"
     id_column = "doc_id"
     metadata_columns = ["category", "priority"]
-    df = sample_dataframe
+    output_dir = tmp_path / "markdown_output"
 
     parsed_batch = process_batch_df(
-        df,
+        sample_dataframe,
         content_column=content_column,
         id_column=id_column,
         metadata_columns=metadata_columns,
     )
+    created_files = parsed_batch.to_markdown(str(output_dir))
 
-    markdown_dict = parsed_batch.to_markdown()
+    assert isinstance(created_files, list)
+    assert len(created_files) == len(sample_dataframe)
 
-    assert isinstance(markdown_dict, dict)
-    assert len(markdown_dict) == len(df)
-    assert set(markdown_dict.keys()) == set(df[id_column])
+    for filepath in created_files:
+        assert pathlib.Path(filepath).exists()
+        assert pathlib.Path(filepath).stem in expected_markdown_files
 
-    for doc_id, markdown in markdown_dict.items():
-        assert doc_id in expected_markdown_files
-        assert markdown == expected_markdown_files[doc_id]
+        with open(filepath, "r", encoding="utf-8") as f:
+            markdown = f.read()
+        assert markdown == expected_markdown_files[pathlib.Path(filepath).stem]

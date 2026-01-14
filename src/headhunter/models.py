@@ -474,17 +474,18 @@ class ParsedBatch:
             self.documents, output_dir, show_line_numbers, show_type
         )
 
-    def to_markdown(self) -> dict[str, str]:
-        """Regenerates Markdown for all documents in the batch.
+    def to_markdown(self, output_dir: str) -> list[str]:
+        """Exports each document to individual Markdown files in the output directory.
+
+        Args:
+            output_dir: Directory path where Markdown files will be saved.
 
         Returns:
-            Dictionary mapping document IDs to their regenerated Markdown strings.
+            List of created file paths.
         """
-        result: dict[str, str] = {}
-        for doc in self.documents:
-            doc_id = str(doc.metadata["id"])
-            result[doc_id] = doc.to_markdown()
-        return result
+        from headhunter import output
+
+        return output.batch_to_markdown_files(self.documents, output_dir)
 
     def to_dataframe(self) -> pd.DataFrame:
         """Combines all documents into a single pandas DataFrame.
