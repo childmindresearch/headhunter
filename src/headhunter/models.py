@@ -216,9 +216,17 @@ class ParsedText:
     warnings: list[str]
 
     def __post_init__(self) -> None:
-        """Auto-generate ID from content hash if not provided in metadata."""
-        if "id" not in self.metadata:
-            warning_msg = "No document ID found. Generating one from content hash."
+        """Auto-generate ID from content hash if not provided or empty in metadata."""
+        existing_id = self.metadata["id"]
+        id_is_empty = (
+            existing_id is None
+            or pd.isna(existing_id)
+            or (isinstance(existing_id, str) and not existing_id.strip())
+        )
+        if id_is_empty:
+            warning_msg = (
+                "No valid document ID found. Generating one from content hash."
+            )
             self.warnings.append(warning_msg)
             logger.warning(warning_msg)
             self.metadata["id"] = hashlib.sha256(self.text.encode("utf-8")).hexdigest()
