@@ -575,15 +575,15 @@ class ParsedBatch:
             updated_documents.append(updated_doc)
 
             match_pct = updated_doc.metadata["match_percentage"]
-            assert type(match_pct) is float
+            assert isinstance(match_pct, float)
             match_percentages.append(float(match_pct))
 
             matched = updated_doc.metadata["matched_headings"]
-            assert type(matched) is list
+            assert isinstance(matched, list)
             all_matched_headings.extend(matched)
 
             missing = updated_doc.metadata["missing_headings"]
-            assert type(missing) is list
+            assert isinstance(missing, list)
             all_missing_headings.extend(missing)
 
             doc_id = str(updated_doc.metadata["id"])

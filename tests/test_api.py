@@ -24,7 +24,7 @@ def test_process_text(
     )
     actual_output = parsed_text.to_dict()
 
-    assert type(parsed_text) is ParsedText
+    assert isinstance(parsed_text, ParsedText)
     assert actual_output == sample_mixed_json
 
 
@@ -57,7 +57,7 @@ def test_process_batch_df(
     json_files = parsed_batch.to_json(str(json_dir))
     tree_files = parsed_batch.to_tree(str(tree_dir))
 
-    assert type(parsed_batch) is ParsedBatch
+    assert isinstance(parsed_batch, ParsedBatch)
     assert actual_dataframe.equals(sample_dataframe_parsed)
     assert (
         "Unknown custom configuration parameter(s) will be ignored: 'random_param'. "
@@ -104,7 +104,7 @@ def test_process_text_with_matcher(
 
     actual_output = parsed_text.to_dict()
 
-    assert type(parsed_text) is ParsedText
+    assert isinstance(parsed_text, ParsedText)
     assert actual_output == sample_match_json
 
 
@@ -139,7 +139,7 @@ def test_process_batch_df_with_matcher(
     # Reorder expected columns to match actual output for comparison
     actual_output = actual_output[sample_dataframe_match_parsed.columns]
 
-    assert type(parsed_batch) is ParsedBatch
+    assert isinstance(parsed_batch, ParsedBatch)
     assert actual_output.equals(sample_dataframe_match_parsed)
 
 
@@ -219,7 +219,7 @@ def test_process_structured_df(
     )
     actual_dataframe = parsed_batch.to_dataframe()
 
-    assert type(parsed_batch) is ParsedBatch
+    assert isinstance(parsed_batch, ParsedBatch)
     assert len(parsed_batch.documents) == len(sample_structured_dataframe)
     assert actual_dataframe.equals(sample_structured_parsed)
 
@@ -240,7 +240,7 @@ def test_process_structured_df_auto_detect_columns(
     )
     actual_dataframe = parsed_batch.to_dataframe()
 
-    assert type(parsed_batch) is ParsedBatch
+    assert isinstance(parsed_batch, ParsedBatch)
     assert len(parsed_batch.documents) == len(sample_structured_dataframe)
     assert actual_dataframe.equals(sample_structured_parsed)
 

@@ -9,6 +9,9 @@
 
 A parser for extracting headings and hierarchical structure from Markdown files.
 
+> [!IMPORTANT]
+> This parser uses several heuristic rules to build hierarchies from diverse heading formats. Results may vary depending on document structure and formatting. Please review the [How Hierarchy is Built](#how-hierarchy-is-built) section before use to understand its capabilities and limitations for your specific use case.
+
 ## Features
 
 - Parse multiple heading formats (hash `#`, asterisk `**`, inline with colon, all-caps)

@@ -77,7 +77,7 @@ def to_dict(
             }
 
             parent = _pop_stack_to_parent_level(stack, ctx.level)
-            assert type(parent["sections"]) is list  # for mypy
+            assert isinstance(parent["sections"], list)  # for mypy
             parent["sections"].append(section)
             stack.append((ctx.level, section))
 
@@ -91,7 +91,7 @@ def to_dict(
                 "line_number": token.line_number,
             }
 
-            assert type(parent["sections"]) is list  # for mypy
+            assert isinstance(parent["sections"], list)  # for mypy
             parent["sections"].append(content_item)
 
     return root

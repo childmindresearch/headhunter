@@ -399,7 +399,7 @@ def _split_content_token(
 
     # Create post-content tokens
     # Special handling for inline colon headings
-    assert type(heading_token.metadata) is models.HeadingMetadata  # for mypy
+    assert isinstance(heading_token.metadata, models.HeadingMetadata)  # for mypy
 
     if heading_token.metadata.is_inline:
         if after_text:
@@ -526,7 +526,7 @@ def _find_and_extract_heading(
                 heading_position_in_split = i
                 break
 
-        assert type(heading_position_in_split) is int  # for mypy
+        assert isinstance(heading_position_in_split, int)  # for mypy
         extracted_heading_idx = original_idx + heading_position_in_split
         heading_line_number = split_tokens[heading_position_in_split].line_number
 
@@ -605,7 +605,7 @@ def match_headings(
             match_token, match_idx = exact_match_result
             last_matched_token_index = match_idx
 
-            assert type(match_token.metadata) is models.HeadingMetadata  # for mypy
+            assert isinstance(match_token.metadata, models.HeadingMetadata)  # for mypy
 
             matched_headings.append(
                 {
@@ -657,7 +657,7 @@ def match_headings(
         last_matched_token_index = extracted_heading_idx
 
         extracted_token = current_tokens[extracted_heading_idx]
-        assert type(extracted_token.metadata) is models.HeadingMetadata  # for mypy
+        assert isinstance(extracted_token.metadata, models.HeadingMetadata)  # for mypy
         heading_signature = extracted_token.metadata.signature
 
         matched_headings.append(

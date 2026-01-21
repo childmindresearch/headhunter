@@ -246,7 +246,7 @@ class HierarchyBuilder:
         """
         while heading_stack and heading_stack[-1][0] >= level:
             heading_stack.pop()
-        assert type(token.metadata) is models.HeadingMetadata  # for mypy
+        assert isinstance(token.metadata, models.HeadingMetadata)  # for mypy
         heading_stack.append((level, token.content, token.metadata))
 
     def _should_pop_inline_heading(
