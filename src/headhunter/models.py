@@ -63,7 +63,11 @@ class HeadingMetadata:
             msg = f"Invalid case: {self.case}"
             logger.error(msg)
             raise ValueError(msg)
-        if self.is_inline and self.marker not in ("*", "column"):
+        if (
+            self.is_inline
+            and not self.is_extracted
+            and self.marker not in ("*", "column")
+        ):
             msg = "Only asterisk or column headings can be inline"
             logger.error(msg)
             raise ValueError(msg)
