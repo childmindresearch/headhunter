@@ -10,9 +10,9 @@ license = "LGPL-2.1-only"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-  "pandas>=2.3.3",
-  "rapidfuzz>=3.14.3",
-  "tqdm>=4.67.1"
+  "pandas>=3.0.2",
+  "rapidfuzz>=3.14.5",
+  "tqdm>=4.67.3"
 ]
 
 [dependency-groups]
